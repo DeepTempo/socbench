@@ -1,0 +1,161 @@
+# socbench benchmark configuration
+# All defaults below are safe for a laptop. Override per-dataset, per-stratum,
+# per-provider as needed.
+
+# Sibling-file paths (schema, pricing) are resolved RELATIVE TO THIS FILE,
+# so moving the `config/` folder doesn't require code edits.
+schema_path: schema.json
+pricing_path: pricing.yaml
+
+paths:
+  index_root: indexes
+  runs_root: runs
+  ablations_root: ablations
+  cache_dir: .cache
+
+# Step A — corpus index
+index:
+  # host_egress assignment threshold: a src_ip reaching >= K distinct dst_ips
+  # (label-agnostic) within the time window is scoped as host_egress instead of
+  # per-(src,dst) pair_timeline units.
+  host_egress_fanout_K: 10
+  host_egress_window_minutes: 5
+
+  # Max flows per eval unit. Units larger than this are split into contiguous
+  # time sub-windows so each stays tractable under a model's effective context
+  # window (≈200k-token budget at ~90 tokens/flow, ~50% reserved).
+  max_flows_per_unit: 1000
+
+  # Rendering caps per provider. Used only by the agent loop, but kept here so
+  # one config file drives every step.
+  rendering_caps_per_provider:
+    claude: 600
+    gpt: 1200
+    gemini: 3000
+
+# Agent loop policy
+# Each persona declares both its loop budget (turns / tool calls / wall clock)
+# and the exact set of tools it may invoke. This block is the single source of
+# truth for the persona × tool matrix — the tool registry, prompt assembly,
+# and the agent loop all read from here.
+#
+# Editing `tools:` for any persona changes the `tools_manifest_sha` recorded
+# in run metadata, so the eval-set fingerprint moves with the policy.
+agent:
+  cost_usd_cap_per_rendering: 0.50
+  personas:
+    soc_analyst:
+      max_turns: 4
+      max_tool_calls: 6
+      wall_clock_seconds: 60
+      tools:
+        - list_pairs
+        - get_pair_timeline
+        - get_flows
+        - host_rollup
+        - submit_assessment
+    threat_analyst:
+      max_turns: 8
+      max_tool_calls: 12
+      wall_clock_seconds: 120
+      tools:
+        - list_pairs
+        - get_pair_timeline
+        - get_flows
+        - host_rollup
+        - top_destinations
+        - pair_stats
+        - submit_assessment
+    adversary_hunter:
+      max_turns: 10
+      max_tool_calls: 16
+      wall_clock_seconds: 150
+      tools:
+        - list_pairs
+        - get_pair_timeline
+        - get_flows
+        - host_rollup
+        - top_destinations
+        - pair_stats
+        - port_proto_matrix
+        - rarity_stats
+        - submit_assessment
+    detection_engineer:
+      max_turns: 12
+      max_tool_calls: 20
+      wall_clock_seconds: 180
+      tools:
+        - list_pairs
+        - get_pair_timeline
+        - get_flows
+        - host_rollup
+        - top_destinations
+        - pair_stats
+        - port_proto_matrix
+        - rarity_stats
+        - submit_assessment
+
+# Sampling
+sampling:
+  sample_seed: 7
+  smoke:
+    units_per_stratum: 1
+    min_total_units: 8
+    cost_budget_usd: 10
+  full:
+    # ~1,500 balanced units: caps the dominant strata at 500 and pulls in every
+    # host_egress malicious/mixed unit and the scarce pair_timeline mal/mixed.
+    # Available strata: he:benign 87, he:mal 410, he:mixed 932, pt:benign 15936,
+    # pt:mal 5, pt:mixed 1 → 87+410+500+500+5+1 = ~1,503 selected at
+    # units_per_stratum=500, then capped to full_unit_cap (~66% host_egress).
+    # cost_budget_usd here is a fallback; the launch script overrides it per
+    # provider (--cost-budget-usd 700 openai/gemini, 900 anthropic).
+    units_per_stratum: 500
+    full_unit_cap: 1500
+    cost_budget_usd: 900
+
+# Providers — wired into the agent loop. Model identities are pinned per run.
+providers:
+  openai:
+    enabled: false
+    model: gpt-5.4
+    max_output_tokens: 2048
+    timeout_seconds: 60
+    max_retries: 3
+    max_concurrency: 6
+    # OpenAI reasoning models are chattier (~7 turns vs ~5 for peers) and slower,
+    # so they exhaust persona turn/wall/cost budgets on large host_egress units and
+    # get forced into invalid submissions. Scale the loop budget 1.5x to compensate.
+    budget_multiplier: 1.5
+  anthropic:
+    enabled: false
+    model: claude-opus-4-7
+    max_output_tokens: 2048
+    timeout_seconds: 60
+    max_retries: 3
+    max_concurrency: 8
+  gemini:
+    enabled: false
+    model: gemini-2.5-pro
+    max_output_tokens: 2048
+    timeout_seconds: 60
+    max_retries: 3
+    max_concurrency: 8
+
+# Default dataset entries. Each entry is a logical name → source parquet URI(s).
+# `sample` ships with the repo (≤ 10 MB) so smoke runs need no downloads.
+datasets:
+  sample:
+    paths:
+      - data/sample/cic2018-mini.parquet
+    label_group: malicious
+  # Combined benign + Stratosphere malware captures, normalized to the canonical
+  # schema by scripts/build_from_gcs.py. Per-flow labels; a `source` column
+  # records the originating capture. Pull from GCS before build-index:
+  #   gcloud storage cp \
+  #     gs://tempo-datasets-001/benchmark-v0/combined/benchmark-v0-canonical.parquet \
+  #     data/benchmark-v0.parquet
+  benchmark-v0:
+    paths:
+      - data/benchmark-v0.parquet
+    label_group: malicious

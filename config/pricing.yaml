@@ -1,0 +1,55 @@
+# socbench provider pricing snapshot.
+# Update `snapshot_date` whenever rates change. Every published number is
+# tagged with `pricing_snapshot_date` so users can reconcile
+# cost figures against the rate card that produced them.
+#
+# Rates are USD per 1,000,000 tokens. `cached_input` is reported separately so
+# the cost rollup can show cache savings; if a provider has no separate cached
+# rate, set `cached_input` equal to `input`.
+
+snapshot_date: 2026-06-03
+currency: USD
+
+# `reasoning` is the price for reasoning/"thinking" tokens. OpenAI, Anthropic,
+# and Gemini all bill these at the OUTPUT rate, so `reasoning` == `output` for
+# every model below.
+
+providers:
+  openai:
+    # https://openai.com/api/pricing/ — standard short-context tier (<=272K).
+    gpt-5.5:
+      input:         5.00
+      cached_input:  0.50
+      output:        30.00
+      reasoning:     30.00
+    gpt-5.4:
+      input:         2.50
+      cached_input:  0.25
+      output:        15.00
+      reasoning:     15.00
+
+  anthropic:
+    # https://www.anthropic.com/pricing#api — cache_read is 0.1x input.
+    claude-opus-4-7:
+      input:         5.00
+      cached_input:  0.50
+      output:        25.00
+      reasoning:     25.00
+    claude-sonnet-4-6:
+      input:         3.00
+      cached_input:  0.30
+      output:        15.00
+      reasoning:     15.00
+
+  gemini:
+    # https://ai.google.dev/gemini-api/docs/pricing — standard tier (<=200K).
+    gemini-2.5-pro:
+      input:         1.25
+      cached_input:  0.125
+      output:        10.00
+      reasoning:     10.00
+    gemini-2.5-flash:
+      input:         0.30
+      cached_input:  0.03
+      output:        2.50
+      reasoning:     2.50

@@ -1,0 +1,70 @@
+# GKE Job: one-shot full socbench benchmark across all providers.
+# Placeholders (__NAME__, __IMAGE__, ...) are filled in by deploy/gcp/launch.sh.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: __JOB_NAME__
+  namespace: tempo
+  labels:
+    app: socbench
+spec:
+  backoffLimit: 0
+  # Hard ceiling so a stuck provider call can't run forever (8h).
+  activeDeadlineSeconds: 28800
+  # Keep the finished Job (and its logs) around for inspection.
+  ttlSecondsAfterFinished: 172800
+  template:
+    metadata:
+      labels:
+        app: socbench
+    spec:
+      serviceAccountName: tempo-sa
+      restartPolicy: Never
+      containers:
+      - name: socbench
+        image: __IMAGE__
+        imagePullPolicy: Always
+        env:
+        - name: GOOGLE_CLOUD_PROJECT
+          value: "prod-loglm"
+        - name: CLOUDSDK_CORE_PROJECT
+          value: "prod-loglm"
+        - name: DATASET_GCS
+          value: "__DATASET_GCS__"
+        - name: RESULTS_GCS
+          value: "__RESULTS_GCS__"
+        - name: PROVIDERS
+          value: "__PROVIDERS__"
+        - name: MODE
+          value: "__MODE__"
+        - name: PERSONAS
+          value: "all"
+        - name: COST_BUDGET_USD
+          value: "__BUDGET__"
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: socbench-llm-keys
+              key: OPENAI_API_KEY
+              optional: true
+        - name: ANTHROPIC_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: socbench-llm-keys
+              key: ANTHROPIC_API_KEY
+              optional: true
+        - name: GEMINI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: socbench-llm-keys
+              key: GEMINI_API_KEY
+              optional: true
+        resources:
+          requests:
+            cpu: "1"
+            memory: "4Gi"
+            ephemeral-storage: "2Gi"
+          limits:
+            cpu: "2"
+            memory: "8Gi"
+            ephemeral-storage: "4Gi"

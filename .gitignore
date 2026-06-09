@@ -1,0 +1,47 @@
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+.Python
+.venv/
+venv/
+env/
+.envrc
+
+build/
+dist/
+*.egg-info/
+*.egg
+wheels/
+pip-wheel-metadata/
+
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+.cache/
+.cache.*
+.local/
+
+indexes/
+runs/
+ablations/
+
+# Sample dataset. The committed slice is `cic2018-mini.parquet`; other parquet
+# files dropped into data/sample/ (e.g. synthetic outputs from tests) are
+# treated as scratch.
+data/sample/*.parquet
+!data/sample/cic2018-mini.parquet
+!data/sample/README.md
+
+.ipynb_checkpoints/
+notebooks/*.ipynb_checkpoints/
+
+.DS_Store
+.idea/
+.vscode/
+*.swp
