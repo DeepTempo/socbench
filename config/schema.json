@@ -1,0 +1,87 @@
+{
+  "schema_version": "v1",
+  "title": "socbench Canonical NetFlow Schema",
+  "description": "Canonical schema, normalization aliases, and label-inference rules for heterogeneous NetFlow-like parquet datasets ingested by the index builder (build-index).",
+  "canonical_flow_record": {
+    "type": "object",
+    "required": [
+      "src_ip",
+      "dst_ip",
+      "ts_start",
+      "protocol",
+      "src_port",
+      "dst_port",
+      "bytes_in",
+      "bytes_out",
+      "pkts_in",
+      "pkts_out",
+      "tcp_flags",
+      "flow_duration_ms",
+      "sampling_rate"
+    ],
+    "additionalProperties": true,
+    "properties": {
+      "src_ip":            { "type": "string",  "description": "Source IP address (IPv4 or IPv6 string)." },
+      "dst_ip":            { "type": "string",  "description": "Destination IP address." },
+      "ts_start":          { "type": "number",  "description": "Flow start timestamp, normalized to epoch seconds (float)." },
+      "protocol":          { "type": "string",  "description": "Transport protocol label or numeric protocol ID rendered as string." },
+      "src_port":          { "type": "integer", "minimum": 0, "description": "Source port." },
+      "dst_port":          { "type": "integer", "minimum": 0, "description": "Destination port." },
+      "bytes_in":          { "type": "number",  "minimum": 0, "description": "Bytes from destination to source." },
+      "bytes_out":         { "type": "number",  "minimum": 0, "description": "Bytes from source to destination." },
+      "pkts_in":           { "type": "number",  "minimum": 0, "description": "Packets from destination to source." },
+      "pkts_out":          { "type": "number",  "minimum": 0, "description": "Packets from source to destination." },
+      "tcp_flags":         { "type": "string",  "description": "TCP flags summary string. Empty for non-TCP if unavailable." },
+      "flow_duration_ms":  { "type": "number",  "minimum": 0, "description": "Flow duration in milliseconds." },
+      "sampling_rate":     { "type": "integer", "minimum": 1, "description": "Exporter sampling rate. Defaults to 1 when unknown." }
+    }
+  },
+  "normalization_aliases": {
+    "src_ip":            ["src_ip", "source_ip", "SrcIP", "IPV4_SRC_ADDR", "ipv4_src_addr"],
+    "dst_ip":            ["dst_ip", "dest_ip", "destination_ip", "DstIP", "IPV4_DST_ADDR", "ipv4_dst_addr"],
+    "ts_start":          ["ts_start", "timestamp", "FLOW_START_MILLISECONDS", "flow_start_ms", "StartTime", "start_time"],
+    "protocol":          ["protocol", "PROTOCOL", "ip_protocol", "L4_PROTOCOL"],
+    "src_port":          ["src_port", "source_port", "SrcPort", "L4_SRC_PORT"],
+    "dst_port":          ["dst_port", "dest_port", "destination_port", "DstPort", "L4_DST_PORT"],
+    "bytes_in":          ["bytes_in", "bwd_bytes", "IN_BYTES", "in_bytes"],
+    "bytes_out":         ["bytes_out", "fwd_bytes", "OUT_BYTES", "out_bytes"],
+    "pkts_in":           ["pkts_in", "IN_PKTS", "in_pkts"],
+    "pkts_out":          ["pkts_out", "OUT_PKTS", "out_pkts"],
+    "tcp_flags":         ["tcp_flags", "TCP_FLAGS"],
+    "flow_duration_ms":  ["flow_duration_ms", "FLOW_DURATION_MILLISECONDS", "duration_ms", "Duration"],
+    "sampling_rate":     ["sampling_rate", "SAMPLING_RATE"]
+  },
+  "timestamp_inference": {
+    "millisecond_aliases": ["FLOW_START_MILLISECONDS", "flow_start_ms", "timestamp"],
+    "second_aliases":      ["ts_start", "start_time", "StartTime"],
+    "rule": "If the chosen source alias is in millisecond_aliases or the median value > 10^12, divide by 1000 to obtain epoch seconds; otherwise treat as seconds."
+  },
+  "label_inference": {
+    "supported_label_groups": ["benign", "malicious"],
+    "mixed_dataset_rules": {
+      "normalized_columns": {
+        "attack": "_attack_label",
+        "numeric_label": "_numeric_label"
+      },
+      "attack_columns": ["Attack", "attack"],
+      "label_columns":  ["Label", "label"],
+      "benign_attack_match":    "case-insensitive equals 'benign' or empty",
+      "malicious_attack_match": "non-empty attack string that is not 'benign'",
+      "numeric_label_rule":     "label > 0 => malicious, label <= 0 => benign"
+    },
+    "attack_family_strings_used_for_forbidden_token_check": [
+      "Bot", "Botnet", "DDoS", "DoS", "Brute Force", "Brute-Force",
+      "Infiltration", "PortScan", "Port Scan", "SSH-Bruteforce",
+      "FTP-BruteForce", "Web Attack", "SQL Injection", "XSS",
+      "Heartbleed", "Mirai"
+    ]
+  },
+  "stage_a_output_contract": {
+    "flows_parquet_columns_appended_by_normalization": [
+      "_flow_id",
+      "_attack_label",
+      "_numeric_label",
+      "_is_malicious"
+    ]
+  }
+}

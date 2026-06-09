@@ -1,0 +1,21 @@
+# Keep the build context small: source + config only. The dataset and all
+# generated artifacts are fetched/created at runtime, not baked into the image.
+.git
+.venv
+venv
+__pycache__
+*.pyc
+.pytest_cache
+.ruff_cache
+.mypy_cache
+runs
+ablations
+indexes
+.cache
+data/*.parquet
+data/sample/*.parquet
+*.ipynb_checkpoints
+htmlcov
+dist
+build
+*.egg-info

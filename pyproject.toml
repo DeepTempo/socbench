@@ -1,0 +1,125 @@
+[build-system]
+requires = ["hatchling>=1.29.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "socbench"
+description = "Benchmark frontier reasoning LLMs as SOC agents on raw NetFlow data."
+readme = "README.md"
+license = { text = "Apache-2.0" }
+requires-python = ">=3.11"
+authors = [{ name = "Mayank Kumar" }]
+keywords = ["security", "soc", "benchmark", "llm", "netflow", "agent"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Information Technology",
+  "Intended Audience :: Science/Research",
+  "License :: OSI Approved :: Apache Software License",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Security",
+]
+dynamic = ["version"]
+dependencies = [
+  "polars>=1.30,<2",
+  "duckdb>=1.4,<2",
+  "pyarrow>=17",
+  "pydantic>=2.7,<3",
+  "pyyaml>=6.0",
+  "click>=8.1",
+  "jsonschema>=4.21",
+  "python-json-logger>=2.0",
+  "rich>=13.7",
+]
+
+[project.optional-dependencies]
+providers = [
+  "openai>=1.40",
+  "anthropic>=0.34",
+  "google-genai>=0.3",
+]
+notebooks = [
+  "jupyterlab>=4.0",
+  "matplotlib>=3.8",
+  "pandas>=2.2",
+]
+dev = [
+  "pytest>=8.0",
+  "pytest-cov>=5.0",
+  "ruff>=0.6",
+  "mypy>=1.10",
+  "types-PyYAML",
+]
+
+[project.scripts]
+socbench = "socbench.cli:cli"
+
+[project.urls]
+Homepage = "https://github.com/DeepTempo/socbench"
+Repository = "https://github.com/DeepTempo/socbench"
+Issues = "https://github.com/DeepTempo/socbench/issues"
+
+[tool.hatch.version]
+path = "src/socbench/_version.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/socbench"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+  "/src",
+  "/tests",
+  "/scripts",
+  "/docs",
+  "/data/sample/README.md",
+  "/config",
+  "/README.md",
+  "/LICENSE",
+  "/pyproject.toml",
+]
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+addopts = ["-ra", "--strict-markers"]
+markers = [
+  "slow: marks tests as slow",
+  "integration: integration tests that touch external APIs",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM", "PL", "RUF"]
+ignore = [
+  "PLR0913", # too many arguments — config classes legitimately need many
+  "PLR2004", # magic numbers in tests are fine
+  "RUF002",  # unicode in docstrings (we use × for the persona × tool matrix)
+  "RUF003",  # unicode in comments — same reasoning
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["PLR2004", "S101", "B008"]
+"src/socbench/tools/smoke.py" = ["PLR0911"]  # dispatch-style returns are clearer
+"src/socbench/agent.py" = ["PLR0915", "PLR0912"]  # the loop body is inherently sequential
+"src/socbench/cli.py" = ["PLR0915"]  # run_cmd is long-but-linear CLI/config wiring
+"src/socbench/providers/base.py" = ["PLC0415"]  # lazy SDK imports keep optional deps optional
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+ignore_missing_imports = true
+packages = ["socbench"]
+
+[dependency-groups]
+dev = [
+  "pytest>=8.0",
+  "pytest-cov>=5.0",
+  "ruff>=0.6",
+  "mypy>=1.10",
+]
