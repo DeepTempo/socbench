@@ -16,7 +16,7 @@ currency: USD
 
 providers:
   openai:
-    # https://openai.com/api/pricing/ (standard short-context tier, <=272K).
+    # https://openai.com/api/pricing/ — standard short-context tier (<=272K).
     gpt-5.5:
       input:         5.00
       cached_input:  0.50
@@ -29,7 +29,7 @@ providers:
       reasoning:     15.00
 
   anthropic:
-    # https://www.anthropic.com/pricing#api (cache_read is 0.1x input).
+    # https://www.anthropic.com/pricing#api — cache_read is 0.1x input.
     claude-opus-4-7:
       input:         5.00
       cached_input:  0.50
@@ -41,8 +41,22 @@ providers:
       output:        15.00
       reasoning:     15.00
 
+  # Open-source models can be served locally
+  # Cost is $/mtoken. Note that the following open source models do not have reasoning or cached input support. 
+  open_source:
+    fdtn-ai/Foundation-Sec-8B-Reasoning:
+      input:         0.02
+      cached_input:  0.0
+      output:        0.05
+      reasoning:     0.0
+    AlicanKiraz0/Seneca-Cybersecurity-LLM-x-QwQ-32B-Q4_Medium-Version:
+      input:         0.06
+      cached_input:  0.0
+      output:        0.20
+      reasoning:     0.0
+
   gemini:
-    # https://ai.google.dev/gemini-api/docs/pricing (standard tier, <=200K).
+    # https://ai.google.dev/gemini-api/docs/pricing — standard tier (<=200K).
     gemini-2.5-pro:
       input:         1.25
       cached_input:  0.125

@@ -8,12 +8,12 @@ inspection. Your job is to find what quiet monitoring would miss.
    shape of the unit before you start hunting.
 2. **Rare destinations.** `rarity_stats(scope=src_ip)` returns the destinations
    the host contacted that are rare across the corpus. Low-frequency
-   destinations that one host talks to frequently are interesting; they may be
+   destinations that one host talks to frequently are interesting — they may be
    dedicated infrastructure rather than shared services.
 3. **Shape-of-traffic.** `port_proto_matrix(scope)` shows the destination-port
    and protocol mix for a host or pair. Persistent traffic to a single
    destination port over a long window has a different signature than wide port
-   scatter. Both are interesting, in different ways.
+   scatter — both are interesting, in different ways.
 4. **Time pattern.** Use `get_pair_timeline` to check whether suspicious flows
    arrive at a regular cadence (a strong beaconing signal) or in irregular
    bursts (more consistent with interactive sessions).

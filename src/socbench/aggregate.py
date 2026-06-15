@@ -1,4 +1,4 @@
-"""Step 6: ablation aggregator (Step C).
+"""Step 6 — ablation aggregator (Step C).
 
 Reads every ``runs/<run_id>/`` sharing a ``(dataset_hash, sample_seed)``,
 groups them by their ``ablation`` tag, and writes::
@@ -100,7 +100,7 @@ def _delta_against_main(main: _RunRef, other: _RunRef) -> dict[str, dict[str, fl
     """Per-(provider/persona) ``main - other`` deltas.
 
     Covers the flow-set lenses, `first_pass_valid_rate`, the verdict-level
-    metrics (accuracy / f1 / coverage-adjusted recall): the meaningful signal
+    metrics (accuracy / f1 / coverage-adjusted recall — the meaningful signal
     for tool-stripping ablations where the flow lenses are structurally zero),
     and cost. Missing or ``None`` metrics on either side are skipped.
     """
@@ -151,7 +151,7 @@ def aggregate_ablations(
     """Join runs by ablation tag and write ``ablation_summary.json``.
 
     Returns the path to the written summary. Raises ``FileNotFoundError`` if
-    no ``main`` run exists for the pair; deltas are meaningless without it.
+    no ``main`` run exists for the pair — deltas are meaningless without it.
     """
     by_tag = discover_runs(runs_root, dataset_hash=dataset_hash, sample_seed=sample_seed)
     out_dir = ablations_root / dataset_hash / str(sample_seed)

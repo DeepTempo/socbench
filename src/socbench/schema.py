@@ -97,7 +97,7 @@ class CanonicalSchema(_Strict):
 
         Alias order in ``schema.json`` is significant: canonical names sit at
         the top of each list so a dataset that already speaks canonical wins.
-        Returns ``None`` when nothing matches; callers decide if that's fatal.
+        Returns ``None`` when nothing matches — callers decide if that's fatal.
         """
         case_insensitive = {c.lower(): c for c in present_columns}
         for alias in self.aliases_for(canonical_col):

@@ -1,4 +1,4 @@
-"""Step 6: stratified sampling.
+"""Step 6 — stratified sampling.
 
 Strata are ``(unit_type, gold_label)`` → up to six buckets
 (``{pair_timeline, host_egress} × {benign, malicious, mixed}``). The
@@ -9,12 +9,12 @@ the single-shot baseline, the main agent run, and every ablation score the
 
 Modes (defaults from ``benchmark_config.yaml``):
 
-- **smoke**: 1 unit per non-empty stratum, topped up to ``min_total_units``
+- **smoke** — 1 unit per non-empty stratum, topped up to ``min_total_units``
   (default 8) from the leftover pool if the strata alone don't reach it.
-- **full**:  ``units_per_stratum`` (default 10) per stratum, then the whole
+- **full**  — ``units_per_stratum`` (default 10) per stratum, then the whole
   selection is capped at ``full_unit_cap`` (default 60).
 
-Empty strata are reported as ``stratum_undersampled``, never an error.
+Empty strata are reported as ``stratum_undersampled`` — never an error.
 """
 from __future__ import annotations
 
@@ -79,7 +79,7 @@ def stratified_sample(
     rng = random.Random(_seed_int(dataset_hash=dataset_hash, sample_seed=sample_seed, mode=mode))
 
     # Bucket units by stratum. Sort within each bucket by eval_unit_id first so
-    # the seeded shuffle is the *only* source of order, independent of the
+    # the seeded shuffle is the *only* source of order — independent of the
     # order units arrived in.
     buckets: dict[str, list[EvalUnit]] = {}
     for unit in units:
@@ -136,7 +136,7 @@ def stratified_sample(
 
     # Budget-robust output order: round-robin across strata (one unit per
     # stratum in rotation) so that ANY prefix of the list stays balanced. This
-    # matters when a run is truncated mid-way by a cost cap; the Runner is
+    # matters when a run is truncated mid-way by a cost cap — the Runner is
     # unit-outer, so a stratum-grouped order would finish one stratum before
     # touching the next. Deterministic: each stratum's units keep their seeded
     # selection order; strata rotate in the fixed ALL_STRATA order.

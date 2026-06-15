@@ -1,0 +1,14 @@
+# Cloud Build config for the socbench Vertex AI image.
+# Build context is the repo root; Dockerfile is at deploy/vertex/Dockerfile.
+#
+# Invoke:
+#   gcloud builds submit . --config deploy/vertex/cloudbuild.yaml \
+#     --substitutions _IMAGE=us-central1-docker.pkg.dev/PROJECT/socbench/socbench-vertex:TAG
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args: ["build", "-f", "deploy/vertex/Dockerfile", "-t", "${_IMAGE}", "."]
+images:
+  - "${_IMAGE}"
+options:
+  machineType: E2_HIGHCPU_8
+  diskSizeGb: 100

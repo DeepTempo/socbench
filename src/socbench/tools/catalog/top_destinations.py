@@ -1,4 +1,4 @@
-"""``top_destinations``: the top destinations a host talked to.
+"""``top_destinations`` — the top destinations a host talked to.
 
 Persona allowlist: Threat, Hunter, DE.
 """

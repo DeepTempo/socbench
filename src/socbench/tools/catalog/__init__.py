@@ -8,7 +8,7 @@ Each tool lives in its own module so that:
   under ``agent.personas.<persona>.tools``, so navigation from policy to
   implementation is trivial
 
-``ALL_TOOLS`` is the canonical registration list; order has no semantic
+``ALL_TOOLS`` is the canonical registration list — order has no semantic
 meaning. ``build_default_registry`` is the only factory callers should use;
 it instantiates one of each tool and binds the persona allowlist supplied
 by configuration.

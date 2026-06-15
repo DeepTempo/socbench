@@ -1,4 +1,4 @@
-"""``port_proto_matrix``: (dst_port, protocol) breakdown for a scope.
+"""``port_proto_matrix`` — (dst_port, protocol) breakdown for a scope.
 
 Persona allowlist: Hunter, DE.
 """

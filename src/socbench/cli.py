@@ -49,7 +49,7 @@ log = get_logger(__name__)
     help="Log format. Defaults to SOCBENCH_LOG_FORMAT or 'json'.",
 )
 def cli(log_level: str, log_format: str | None) -> None:
-    """socbench: frontier LLMs as SOC agents on raw NetFlow.
+    """socbench — frontier LLMs as SOC agents on raw NetFlow.
 
     See `socbench <subcommand> --help` for details.
     """
@@ -139,7 +139,7 @@ def tools_smoke_cmd(config_path: Path, dataset_hash: str, persona: str) -> None:
     index_dir = cfg.paths.index_root / dataset_hash
     if not index_dir.exists():
         raise click.ClickException(
-            f"index dir {index_dir} not found. Run `socbench build-index` first."
+            f"index dir {index_dir} not found — run `socbench build-index` first."
         )
     registry = build_default_registry(
         persona_allowlist=cfg.agent.persona_tool_allowlist()
@@ -265,7 +265,7 @@ def run_cmd(
     index_dir = cfg.paths.index_root / dataset_hash
     if not index_dir.exists():
         raise click.ClickException(
-            f"index dir {index_dir} not found. Run `socbench build-index` first."
+            f"index dir {index_dir} not found — run `socbench build-index` first."
         )
 
     # Personas
@@ -288,6 +288,20 @@ def run_cmd(
     for name in provider_names:
         if name == "mock":
             model = "mock-default"
+        elif name == "open_source":
+            # Model is read from config when present; otherwise fall back to the
+            # OPEN_SOURCE_MODEL env var (useful when the Vertex entrypoint passes
+            # --model directly without editing benchmark_config.yaml).
+            import os as _os
+            if name in cfg.providers:
+                model = cfg.providers[name].model  # type: ignore[assignment]
+            elif _os.environ.get("OPEN_SOURCE_MODEL"):
+                model = _os.environ["OPEN_SOURCE_MODEL"]
+            else:
+                raise click.ClickException(
+                    "open_source provider: add an 'open_source' entry to config or "
+                    "set OPEN_SOURCE_MODEL env var"
+                )
         else:
             if name not in cfg.providers:
                 raise click.ClickException(
@@ -335,7 +349,7 @@ def run_cmd(
         )
     if not units:
         raise click.ClickException(
-            "no eval units selected; the index may be empty or sampling found no strata."
+            "no eval units selected — the index may be empty or sampling found no strata."
         )
 
     # Build the run

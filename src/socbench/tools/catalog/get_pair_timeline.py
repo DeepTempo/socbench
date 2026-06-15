@@ -1,4 +1,4 @@
-"""``get_pair_timeline``: time-ordered flow records for one (src_ip, dst_ip) pair.
+"""``get_pair_timeline`` — time-ordered flow records for one (src_ip, dst_ip) pair.
 
 Persona allowlist: SOC, Threat, Hunter, DE.
 """

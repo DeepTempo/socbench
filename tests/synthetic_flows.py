@@ -4,7 +4,7 @@ Generates a small parquet that exercises both the ``pair_timeline`` and
 ``host_egress`` assignment paths so the eval-unit tests have non-trivial
 coverage.
 
-This module is intentionally NOT importable from the installed package; it
+This module is intentionally NOT importable from the installed package — it
 lives under ``tests/`` and is only used by pytest.
 """
 from __future__ import annotations

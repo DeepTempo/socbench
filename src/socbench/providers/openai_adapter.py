@@ -123,7 +123,7 @@ class OpenAIAdapter(Adapter):
 
 
 # ---------------------------------------------------------------------------
-# Helpers: request shaping
+# Helpers — request shaping
 # ---------------------------------------------------------------------------
 
 
@@ -173,7 +173,7 @@ def _tool_schema_to_openai(item: dict[str, Any]) -> dict[str, Any]:
 
 
 # ---------------------------------------------------------------------------
-# Helpers: response parsing
+# Helpers — response parsing
 # ---------------------------------------------------------------------------
 
 
@@ -243,8 +243,8 @@ def _extract_openai_usage(raw: Any) -> TokenUsage:
         reasoning = int(getattr(out_details, "reasoning_tokens", 0) or 0)
     # The Responses API reports `output_tokens` as the FULL output count, with
     # reasoning tokens included as a subset. We store `output_tokens` as the
-    # visible (non-reasoning) portion so the provider-agnostic cost formula
-    # (output * output_rate + reasoning * reasoning_rate) bills reasoning exactly
+    # visible (non-reasoning) portion so the provider-agnostic cost formula —
+    # output * output_rate + reasoning * reasoning_rate — bills reasoning exactly
     # once. This matches Gemini, where candidates/thoughts are already disjoint.
     return TokenUsage(
         prompt_tokens=max(0, prompt - cached),
@@ -255,7 +255,7 @@ def _extract_openai_usage(raw: Any) -> TokenUsage:
 
 
 # ---------------------------------------------------------------------------
-# Tiny JSON helpers: local so this file has no extra imports
+# Tiny JSON helpers — local so this file has no extra imports
 # ---------------------------------------------------------------------------
 
 

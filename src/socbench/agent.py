@@ -1,9 +1,9 @@
-"""Step 5: agent loop, cost rollup, run orchestrator, artifact writers.
+"""Step 5 — agent loop, cost rollup, run orchestrator, artifact writers.
 
 Three layers, one module:
 
-1. :class:`AgentLoop` runs ONE rendering: one (eval_unit, persona, provider)
-   triple, multi-turn until ``submit_assessment`` or a cap is hit. Enforces
+1. :class:`AgentLoop` runs ONE rendering — one (eval_unit, persona, provider)
+   triple — multi-turn until ``submit_assessment`` or a cap is hit. Enforces
    per-persona budgets with force-final-answer, the persona tool allowlist,
    and the split between recoverable tool-call schema violations and strict
    final-answer validation.
@@ -13,8 +13,8 @@ Three layers, one module:
    tightly-typed writer; there's no schema drift between models.py
    and the JSONL rows.
 
-3. Helpers: ``load_eval_units``, ``select_eval_units``,
-   ``build_user_kickoff_message``, and ``compute_summary`` are small,
+3. Helpers — ``load_eval_units``, ``select_eval_units``,
+   ``build_user_kickoff_message``, and ``compute_summary`` — are small,
    pure, and test-friendly.
 
 The module deliberately knows nothing about specific providers. It receives
@@ -147,7 +147,7 @@ def select_eval_units(
 def build_user_kickoff_message(unit: EvalUnit) -> str:
     """The first user-role message of every rendering.
 
-    Carries the eval unit's *non-label* metadata only. The model uses tools
+    Carries the eval unit's *non-label* metadata only — the model uses tools
     to discover flow_ids within scope. Never includes ``gold_label``,
     ``malicious_flow_count``, or anything else label-derived.
     """
@@ -509,7 +509,7 @@ class AgentLoop:
                 error=f"tool {call.name!r} not in allowlist for persona {self.cfg.persona!r}",
             )
 
-        # submit_assessment as a regular tool call is a model bug; it must
+        # submit_assessment as a regular tool call is a model bug — it must
         # go through the structured-output path. Reject loudly so the model
         # learns from the error rather than blocking the rendering.
         if call.name == "submit_assessment":
@@ -774,7 +774,7 @@ class Runner:
         ):
             p.write_text("", encoding="utf-8")
 
-        # Snapshot composed prompts once per (persona x provider); they're
+        # Snapshot composed prompts once per (persona × provider) — they're
         # stable across renderings within a run because the system prompt is
         # the cacheable prefix.
         ablation: Ablation = (
@@ -803,7 +803,7 @@ class Runner:
         # Every rendering is one coroutine on a single event loop. Renderings
         # are independent and I/O-bound (each waits on an LLM API call), and a
         # per-provider asyncio.Semaphore bounds how many of that provider's
-        # calls are in flight at once, so a throttled provider can't starve
+        # calls are in flight at once — so a throttled provider can't starve
         # the others and we never exceed its rate limit. Tasks parked on a
         # full semaphore haven't started network work yet, so cancelling them
         # (budget abort / open breaker) is clean. All artifact writes +
@@ -958,7 +958,7 @@ class Runner:
         summary["total_cost_usd"] = round(total_cost, 6)
         # True end-to-end run duration (concurrency-aware).
         summary["elapsed_wall_ms"] = elapsed_wall_ms
-        # Sum of per-rendering wall times: sequential-equivalent compute, NOT
+        # Sum of per-rendering wall times — sequential-equivalent compute, NOT
         # elapsed time. Renamed from the old misleading `total_wall_time_ms`.
         summary["aggregate_rendering_wall_ms"] = total_wall_ms
         paths.summary_json.write_text(
@@ -1250,16 +1250,16 @@ def _verdict_block(
     unit's `gold_label`, independent of the per-flow lenses. A unit is a gold
     positive if its label is malicious/mixed; a prediction is positive when
     `verdict == "malicious"`. This captures "did the model get the call right"
-    (something the flow-set lenses miss, e.g. `verdict=malicious` with an
+    — something the flow-set lenses miss (e.g. `verdict=malicious` with an
     empty index list still scores per-flow F1 1.0 on a benign unit).
 
-    precision/recall/f1 are ``None`` (not the degenerate 1.0) when undefined,
-    no predicted positives or no gold positives, so positive-free groups don't
+    precision/recall/f1 are ``None`` (not the degenerate 1.0) when undefined —
+    no predicted positives or no gold positives — so positive-free groups don't
     report spurious perfect scores; only `accuracy` is meaningful there.
 
     `coverage_adjusted_recall` = TP / (ALL malicious-bearing units, including
     those whose rendering was invalid/forced and thus excluded from `valid`).
-    Unlike `recall` it can't be inflated by failing on the hard units; an
+    Unlike `recall` it can't be inflated by failing on the hard units — an
     invalid rendering counts as a miss. `malicious_units_total` is its
     denominator.
     """
@@ -1292,7 +1292,7 @@ def _confidence_block(valid: list[EvalUnitSummary]) -> dict[str, float | int]:
 
     Splits the model's self-reported `confidence` by whether the binary
     verdict was correct, so you can eyeball over/under-confidence. Not a
-    headline metric: a coarse signal for tuning prompts/thresholds locally.
+    headline metric — a coarse signal for tuning prompts/thresholds locally.
     """
     conf = [(g.confidence, g.gold_label in _MALICIOUS_GOLD, g.verdict == "malicious")
             for g in valid if g.confidence is not None and g.verdict is not None]
@@ -1324,7 +1324,7 @@ def _score_entry(group: list[EvalUnitSummary]) -> dict[str, Any]:
     """Build one (provider, persona) scoring entry.
 
     Efficacy macros (precision/recall/F1) are computed over VALID renderings
-    only; a forced/invalid rendering produces no verdict, so scoring it as an
+    only — a forced/invalid rendering produces no verdict, so scoring it as an
     empty prediction would credit benign units a perfect 1.0 and fold a
     reliability failure into an efficacy win. Reliability lives in its own
     fields (`first_pass_valid_rate`, `defect_count`) over the FULL group.
@@ -1333,19 +1333,19 @@ def _score_entry(group: list[EvalUnitSummary]) -> dict[str, Any]:
 
     Lens relevance varies by unit type: a `pair_timeline` unit is a single
     `(src,dst)`/`src_ip`, so its per-pair and per-host lenses are near-degenerate
-    (<=1 element); per-flow is the universal lens, while per-host is the
+    (≤1 element) — per-flow is the universal lens, while per-host is the
     meaningful one for `host_egress` fan-out. The `verdict` block scores the
     binary call independent of the flow set; `confidence` is a local-tuning aid.
     `effective_per_flow_f1` is a blended headline (`per_flow_f1_macro` ×
     `first_pass_valid_rate`) so high efficacy can't be read without reliability.
     `native_lens_f1` scores each unit on the lens native to its structure
-    (host_egress->per_host, pair_timeline->per_flow) and macro-averages: a single
+    (host_egress→per_host, pair_timeline→per_flow) and macro-averages — a single
     efficacy number that judges every unit at the resolution that matters for
     it, with an `effective_` reliability-blended sibling.
     """
     valid = [g for g in group if g.unit_first_pass_valid]
     mal = [g for g in valid if g.gold_label in _MALICIOUS_GOLD]
-    # Full count of malicious-bearing units (valid OR not): denominator for the
+    # Full count of malicious-bearing units (valid OR not) — denominator for the
     # coverage-adjusted recall, so failing on hard units can't be hidden.
     malicious_units_total = sum(1 for g in group if g.gold_label in _MALICIOUS_GOLD)
     per_flow_f1_macro = round(_mean([g.per_flow_f1 for g in valid]), 6)
@@ -1389,7 +1389,7 @@ def compute_summary(
     """Aggregate cost, latency, scoring, and cache savings.
 
     Emits two latency views per ``(provider, persona)``: ``latency_per_unit_ms``
-    (task-level: end-to-end wall time to assess one eval unit, from the
+    (task-level — end-to-end wall time to assess one eval unit, from the
     per-rendering summaries) and ``latency_per_call_ms`` (per provider API call,
     read from ``predictions_raw.jsonl``), each reporting count/mean/p50/p95/max,
     plus token totals. The ``scoring`` block is macro-averaged per
@@ -1411,7 +1411,7 @@ def compute_summary(
 
     # Cost + wall-time rollups from EvalUnitSummary
     pp_buckets: dict[tuple[str, str], dict[str, Any]] = {}
-    # Task-level (per-rendering) end-to-end latency series: one entry per
+    # Task-level (per-rendering) end-to-end latency series — one entry per
     # assessed unit, the natural companion to the cost rollup ("how long to
     # assess one unit"), as opposed to the per-API-call series below.
     per_unit_lat: dict[tuple[str, str], list[int]] = {}
@@ -1482,7 +1482,7 @@ def _cache_block(
     """Per-provider cache hit-rate + USD savings.
 
     ``savings_usd`` is ``cached_tokens × (input_rate − cached_input_rate)``
-    per million tokens, i.e. what those tokens *would* have cost at the
+    per million tokens — i.e. what those tokens *would* have cost at the
     uncached rate, minus what they actually cost cached. Zero when pricing
     isn't supplied or the model has no rate entry.
     """

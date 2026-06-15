@@ -135,7 +135,7 @@ class AnthropicAdapter(Adapter):
 
 
 # ---------------------------------------------------------------------------
-# Helpers: request shaping
+# Helpers — request shaping
 # ---------------------------------------------------------------------------
 
 
@@ -191,7 +191,7 @@ def _tool_schema_to_anthropic(item: dict[str, Any]) -> dict[str, Any]:
 
 
 # ---------------------------------------------------------------------------
-# Helpers: response parsing
+# Helpers — response parsing
 # ---------------------------------------------------------------------------
 
 
@@ -270,6 +270,7 @@ def _safe_json_dict(value: Any) -> dict[str, Any]:
                 return parsed
         except json.JSONDecodeError:
             pass
+        
     return {}
 
 

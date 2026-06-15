@@ -130,7 +130,7 @@ class GeminiAdapter(Adapter):
 
 
 # ---------------------------------------------------------------------------
-# Helpers: request shaping
+# Helpers — request shaping
 # ---------------------------------------------------------------------------
 
 
@@ -230,7 +230,7 @@ def _tool_schema_to_gemini_decl(item: dict[str, Any], types: Any) -> Any:
 
 
 # ---------------------------------------------------------------------------
-# Helpers: response parsing
+# Helpers — response parsing
 # ---------------------------------------------------------------------------
 
 

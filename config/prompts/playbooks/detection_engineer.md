@@ -23,5 +23,5 @@ conclusion in terms a downstream detector could implement.
    Say so out loud, then revise toward a feature-based formulation.
 
 Then submit. The `rationale` is what your team will convert into a deployed
-rule the following day. Write it so the next engineer can do that without
+rule the following day — write it so the next engineer can do that without
 reverse-engineering the eval unit.

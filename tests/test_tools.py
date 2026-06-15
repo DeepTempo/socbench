@@ -160,7 +160,7 @@ _EXPECTED_GROUND_TRUTH_FIELDS = frozenset(
 def test_ground_truth_field_set_is_locked() -> None:
     """The set is a closed allowlist; expanding it requires a code change.
 
-    A canary on the contract: if someone trims this set they have to update
+    A canary on the contract — if someone trims this set they have to update
     this test too, which forces a thoughtful review.
     """
     assert GROUND_TRUTH_FIELDS == _EXPECTED_GROUND_TRUTH_FIELDS

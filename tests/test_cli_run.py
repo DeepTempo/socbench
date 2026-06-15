@@ -96,7 +96,7 @@ def test_cli_run_smoke_mock_writes_artifacts(cli_runner, workdir, built_index):
 
     run_dir = Path(output["run_dir"])
     # Every declared run artifact must land on disk AND be non-empty. The
-    # parquet mirrors are included deliberately: a prior regression silently
+    # parquet mirrors are included deliberately — a prior regression silently
     # skipped predictions_raw.parquet, which this assertion now guards.
     for f in ("run_metadata.json", "predictions_raw.jsonl", "predictions_raw.parquet",
               "predictions_per_flow.parquet", "renderings.jsonl",
@@ -169,13 +169,13 @@ def test_real_adapter_imports_lazily_and_errors_without_sdk(provider):
 
     build_adapter() for a real provider must either succeed (when the SDK
     is installed AND credentials are present) OR raise FatalAdapterError with
-    a helpful message, never a bare ImportError or attribute error.
+    a helpful message — never a bare ImportError or attribute error.
     """
     try:
         adapter = build_adapter(provider, "any-model-id")
     except FatalAdapterError as exc:
         # Either the SDK isn't installed, or the API key isn't set. Both are
-        # expected, recoverable conditions: verify the message is actionable
+        # expected, recoverable conditions — verify the message is actionable
         # (points at the install command or the missing env var).
         msg = str(exc).lower()
         assert "install" in msg or "set" in msg or "api_key" in msg

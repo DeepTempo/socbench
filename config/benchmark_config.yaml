@@ -13,7 +13,7 @@ paths:
   ablations_root: ablations
   cache_dir: .cache
 
-# Step A: corpus index
+# Step A — corpus index
 index:
   # host_egress assignment threshold: a src_ip reaching >= K distinct dst_ips
   # (label-agnostic) within the time window is scoped as host_egress instead of
@@ -36,7 +36,7 @@ index:
 # Agent loop policy
 # Each persona declares both its loop budget (turns / tool calls / wall clock)
 # and the exact set of tools it may invoke. This block is the single source of
-# truth for the persona x tool matrix. The tool registry, prompt assembly,
+# truth for the persona × tool matrix — the tool registry, prompt assembly,
 # and the agent loop all read from here.
 #
 # Editing `tools:` for any persona changes the `tools_manifest_sha` recorded
@@ -114,7 +114,7 @@ sampling:
     full_unit_cap: 1500
     cost_budget_usd: 900
 
-# Providers: wired into the agent loop. Model identities are pinned per run.
+# Providers — wired into the agent loop. Model identities are pinned per run.
 providers:
   openai:
     enabled: false
@@ -142,6 +142,23 @@ providers:
     max_retries: 3
     max_concurrency: 8
 
+  # Open-source models served locally via vLLM inside a Vertex AI Custom Job.
+  # Set OPEN_SOURCE_BASE_URL=http://localhost:8000/v1 in the container env;
+  # model is the Hugging Face repo id (e.g. fdtn-ai/Foundation-Sec-8B-Reasoning
+  # or AlicanKiraz0/Seneca-Cybersecurity-LLM-x-QwQ-32B-Q4_Medium-Version).
+  # Concurrency is kept low (1) because there is only one local GPU instance;
+  # raise it if you use tensor parallelism across multiple GPUs.
+  open_source:
+    enabled: false
+    model: fdtn-ai/Foundation-Sec-8B-Reasoning
+    max_output_tokens: 2048
+    timeout_seconds: 300
+    max_retries: 2
+    # Raised from 8 to saturate the vLLM decode batch on multi-GPU (TP) serving;
+    # 8 left most GPU throughput idle and made full runs take tens of hours.
+    max_concurrency: 32
+    temperature: null
+
 # Default dataset entries. Each entry is a logical name → source parquet URI(s).
 # `sample` ships with the repo (≤ 10 MB) so smoke runs need no downloads.
 datasets:
@@ -150,8 +167,11 @@ datasets:
       - data/sample/cic2018-mini.parquet
     label_group: malicious
   # Combined benign + Stratosphere malware captures, normalized to the canonical
-  # schema. Per-flow labels; a `source` column records the originating capture.
-  # The committed parquet at data/benchmark-v0.parquet is the canonical artifact.
+  # schema by scripts/build_from_gcs.py. Per-flow labels; a `source` column
+  # records the originating capture. Pull from GCS before build-index:
+  #   gcloud storage cp \
+  #     gs://your-bucket/benchmark-v0/combined/benchmark-v0-canonical.parquet \
+  #     data/benchmark-v0.parquet
   benchmark-v0:
     paths:
       - data/benchmark-v0.parquet

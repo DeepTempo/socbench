@@ -120,9 +120,9 @@ class MockAdapter(Adapter):
     """Deterministic, offline adapter.
 
     Two construction modes:
-      - ``MockAdapter("mock-default")``: uses the canned default script
+      - ``MockAdapter("mock-default")`` — uses the canned default script
         described in :func:`_default_script`.
-      - ``MockAdapter.with_script(model, script)``: uses a caller-provided
+      - ``MockAdapter.with_script(model, script)`` — uses a caller-provided
         list of :class:`_CannedResponse` items. Tests use this to simulate
         cap hits, schema violations, or multi-step tool sequences.
 

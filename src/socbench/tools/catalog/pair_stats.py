@@ -1,4 +1,4 @@
-"""``pair_stats``: rollup stats for one (src_ip, dst_ip) pair.
+"""``pair_stats`` — rollup stats for one (src_ip, dst_ip) pair.
 
 Persona allowlist: Threat, Hunter, DE.
 """

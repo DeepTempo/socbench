@@ -1,4 +1,4 @@
-"""Step A: corpus index builder.
+"""Step A — corpus index builder.
 
 Pipeline:
 
@@ -14,9 +14,9 @@ Pipeline:
 
 This module is the entirety of the index build. Public entrypoints:
 
-- ``build_index_for_dataset``: orchestrator. Idempotent w.r.t. ``dataset_hash``.
-- ``BuildResult``: return value of the orchestrator.
-- ``assign_eval_units``: the eval-unit assignment rule, also useful from tests.
+- ``build_index_for_dataset`` — orchestrator. Idempotent w.r.t. ``dataset_hash``.
+- ``BuildResult`` — return value of the orchestrator.
+- ``assign_eval_units`` — the eval-unit assignment rule, also useful from tests.
 
 ``dataset_hash`` is **content-addressed**: same logical data + same schema +
 same build args ⇒ same hash. See ``compute_payload_hash`` for the algorithm.
@@ -55,7 +55,7 @@ MALICIOUS_FRACTION_FOR_MALICIOUS_LABEL = 0.8
 # length of the malicious-flow-id list it must emit. The default 1000 is sized
 # to a conservative ~200k-token effective budget at ~90 tokens/flow with ~50%
 # reserved for prompt + reasoning + answer. Splitting is by TIME (not by
-# destination) so the scope the model perceives (src_ip[, dst_ip], window)
+# destination) so the scope the model perceives — (src_ip[, dst_ip], window) —
 # exactly matches the scope its answer is graded against.
 DEFAULT_MAX_FLOWS_PER_UNIT = 1000
 
@@ -115,7 +115,7 @@ def _list_source_columns(con: duckdb.DuckDBPyConnection, sources: list[str]) -> 
 def _detect_timestamp_unit(
     con: duckdb.DuckDBPyConnection, sources: list[str], src_col: str, schema: CanonicalSchema
 ) -> str:
-    """``'ms'`` or ``'s'``: alias membership first, numeric magnitude fallback."""
+    """``'ms'`` or ``'s'`` — alias membership first, numeric magnitude fallback."""
     ms_aliases = {a.lower() for a in schema.timestamp_inference.millisecond_aliases}
     if src_col.lower() in ms_aliases:
         return "ms"
@@ -144,7 +144,7 @@ def _resolve_label_columns(
     return attack_col, label_col
 
 
-def normalize_parquet(  # noqa: PLR0912, PLR0915: single linear pipeline; splitting hides the shape
+def normalize_parquet(  # noqa: PLR0912, PLR0915 — single linear pipeline; splitting hides the shape
     sources: list[Path],
     *,
     schema: CanonicalSchema,
@@ -227,7 +227,7 @@ def normalize_parquet(  # noqa: PLR0912, PLR0915: single linear pipeline; splitt
         con.close()
 
     df = pl.from_arrow(arrow_table)
-    if not isinstance(df, pl.DataFrame):  # pragma: no cover: defensive
+    if not isinstance(df, pl.DataFrame):  # pragma: no cover — defensive
         raise TypeError(f"DuckDB → arrow → polars returned {type(df)}")
 
     df = df.with_columns(
@@ -445,7 +445,7 @@ def assign_eval_units(
 
     **Size bounding (by time).** No single unit may exceed ``max_flows_per_unit``
     flows, so the agent stays within a finite context window. Oversized units are
-    split into contiguous, time-ordered sub-windows (never by destination)
+    split into contiguous, time-ordered sub-windows — never by destination —
     because the scope the model perceives from the kickoff is
     ``(src_ip[, dst_ip], time_window)``; a time split keeps that perceived scope
     identical to the scope the answer is graded against, whereas a destination
@@ -468,7 +468,7 @@ def assign_eval_units(
     )
 
     # Classify each src_ip: max-over-buckets of distinct destination IPs.
-    # Label-agnostic on purpose: unit boundaries must not depend on ground
+    # Label-agnostic on purpose — unit boundaries must not depend on ground
     # truth (see the function docstring).
     per_host_bucket = (
         annotated.group_by(["src_ip", "bucket"], maintain_order=False)
@@ -486,7 +486,7 @@ def assign_eval_units(
 
     units: list[EvalUnit] = []
 
-    # pair_timeline mode: one unit per (src_ip, dst_ip), split into contiguous
+    # pair_timeline mode — one unit per (src_ip, dst_ip), split into contiguous
     # time chunks of at most ``max_flows_per_unit`` flows.
     pair_mode = annotated.filter(~pl.col("src_ip").is_in(list(host_egress_hosts)))
     if not pair_mode.is_empty():
@@ -522,7 +522,7 @@ def assign_eval_units(
                     )
                 )
 
-    # host_egress mode: one unit per (src_ip, bucket), split into contiguous
+    # host_egress mode — one unit per (src_ip, bucket), split into contiguous
     # time chunks of at most ``max_flows_per_unit`` flows. distinct_destinations
     # is recomputed per chunk.
     host_mode = annotated.filter(pl.col("src_ip").is_in(list(host_egress_hosts)))
@@ -748,7 +748,7 @@ def build_index_for_dataset(
 
     if is_index_complete(target_dir) and not rebuild:
         log.info(
-            "index already exists; skipping (pass --rebuild to force)",
+            "index already exists — skipping (pass --rebuild to force)",
             extra={"dataset_hash": dataset_hash, "index_dir": str(target_dir)},
         )
         manifest = IndexManifest.model_validate(

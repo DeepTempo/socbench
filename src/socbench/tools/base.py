@@ -2,10 +2,10 @@
 
 This module is the policy-free core of the tool layer. It defines:
 
-- :class:`Tool`: abstract base every concrete tool subclasses.
-- :class:`ToolContext`: read-only handle into a built index.
-- :class:`ToolSchemaViolation`: raised when a tool call's args fail validation.
-- :class:`ToolRegistry`: name -> tool lookup with persona-allowlist
+- :class:`Tool` — abstract base every concrete tool subclasses.
+- :class:`ToolContext` — read-only handle into a built index.
+- :class:`ToolSchemaViolation` — raised when a tool call's args fail validation.
+- :class:`ToolRegistry` — name → tool lookup with persona-allowlist
   enforcement and a deterministic manifest hash.
 
 It deliberately knows nothing about specific tools (see :mod:`socbench.tools.impl`)
@@ -27,7 +27,7 @@ from socbench.hashing import hash_obj
 
 # ---------------------------------------------------------------------------
 # Ground-truth safety net (tools are read-only views, but they MUST
-# NOT surface any label-derived field to the model; that would let a trivial
+# NOT surface any label-derived field to the model — that would let a trivial
 # agent copy `is_malicious` into `malicious_flow_indices` and score F1=1.00
 # without reasoning. Every tool response is recursively scanned at the
 # boundary; a violation is a *programming* bug, not a user input issue.)
@@ -53,7 +53,7 @@ class GroundTruthLeak(RuntimeError):
     """Raised when a tool response would expose a label-derived field.
 
     The fix is always to drop the offending column from the tool's SQL or
-    response shaping; never to relax this check. The forbidden field set is
+    response shaping — never to relax this check. The forbidden field set is
     deliberately a closed allowlist; expand it if the index grows new
     label-derived columns.
     """
@@ -64,7 +64,7 @@ def _assert_no_ground_truth_leak(payload: Any, *, path: str = "$") -> None:
 
     Walk order is deterministic; the raised path string locates the offender
     so the tool author can fix it directly. Lists and dicts are descended;
-    leaves are ignored; only dict KEYS matter, never values.
+    leaves are ignored — only dict KEYS matter, never values.
     """
     if isinstance(payload, dict):
         for k, v in payload.items():
@@ -141,7 +141,7 @@ class Tool(ABC):
     def __call__(self, args: dict[str, Any], ctx: ToolContext) -> dict[str, Any]:
         self.validate_args(args)
         result = self.call(args, ctx)
-        # Defensive: surface non-JSON-able payloads as bugs at the boundary.
+        # Defensive — surface non-JSON-able payloads as bugs at the boundary.
         json.dumps(result)
         # Belt-and-suspenders: even if a future tool author forgets to strip
         # a label column from their SELECT, the response never reaches the
@@ -157,7 +157,7 @@ class ToolRegistry:
     The persona allowlist comes from configuration (see
     ``socbench.config.AgentConfig.persona_tool_allowlist``), **not** from a
     constant in this module. That keeps the persona × tool matrix in a single
-    place (``config/benchmark_config.yaml``) that every stage can read.
+    place — ``config/benchmark_config.yaml`` — that every stage can read.
 
     If ``persona_allowlist`` is ``None``, persona-aware methods raise. Pass an
     allowlist whenever the agent loop, smoke runner, or prompts need
