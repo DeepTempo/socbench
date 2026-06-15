@@ -28,8 +28,8 @@ Alpha. The full pipeline runs end-to-end. Build-out covered:
   mock) and the multi-turn agent loop with budget caps and cost/latency rollups
 - **Step 6**: scoring (per-flow / per-pair / per-host F1), stratified
   sampling, ablation aggregation
-- **Step 7**: quickstart + results-explorer notebooks, `RESULTS.md` /
-  `RESULTS_REPRODUCE.md`
+- **Step 7**: quickstart + results-explorer notebooks; reproduction
+  instructions in `REPRODUCE.md`
 
 You can run a complete smoke today with **no API keys** via the mock provider
 (see Quickstart step 3, or `notebooks/quickstart.ipynb`).

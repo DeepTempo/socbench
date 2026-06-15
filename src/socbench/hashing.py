@@ -4,8 +4,8 @@ All artifact identifiers (``dataset_hash``, ``tools_manifest_sha``,
 ``prompts_manifest_sha``, ``playbooks_manifest_sha``, ``rendering_id``,
 ``eval_unit_id``) flow through helpers in this module so the algorithm is
 controlled in one place. Stability across Python versions and platforms is a
-hard requirement: every published number in ``RESULTS.md`` is tagged with one
-or more of these hashes.
+hard requirement: every published number is tagged with one or more of these
+hashes.
 """
 from __future__ import annotations
 
