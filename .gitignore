@@ -45,3 +45,7 @@ notebooks/*.ipynb_checkpoints/
 .idea/
 .vscode/
 *.swp
+
+# Local-only working area for drafts, planning docs, and anything else
+# that must not ship to a public repo.
+_private/

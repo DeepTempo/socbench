@@ -150,11 +150,8 @@ datasets:
       - data/sample/cic2018-mini.parquet
     label_group: malicious
   # Combined benign + Stratosphere malware captures, normalized to the canonical
-  # schema by scripts/build_from_gcs.py. Per-flow labels; a `source` column
-  # records the originating capture. Pull from GCS before build-index:
-  #   gcloud storage cp \
-  #     gs://tempo-datasets-001/benchmark-v0/combined/benchmark-v0-canonical.parquet \
-  #     data/benchmark-v0.parquet
+  # schema. Per-flow labels; a `source` column records the originating capture.
+  # The committed parquet at data/benchmark-v0.parquet is the canonical artifact.
   benchmark-v0:
     paths:
       - data/benchmark-v0.parquet
