@@ -17,4 +17,4 @@ enough evidence to commit.
    exact bytes, packets, duration, or TCP flags, call `get_flows` with that id.
 
 Then submit. Keep `rationale` to two to four sentences anchored on what you
-saw — flow_ids, ports, counts, durations.
+saw: flow_ids, ports, counts, durations.

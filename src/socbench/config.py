@@ -1,6 +1,6 @@
 """Typed loaders for ``config/benchmark_config.yaml`` and ``config/pricing.yaml``.
 
-Unknown keys raise — config typos should fail loudly rather than silently
+Unknown keys raise: config typos should fail loudly rather than silently
 degrade a run.
 
 Sibling-file paths inside ``benchmark_config.yaml`` (``schema_path``,
@@ -72,7 +72,7 @@ class PersonaPolicy(_Strict):
         return self
 
 
-# Backwards-compatible alias — the old name was just about budgets.
+# Backwards-compatible alias: the old name was just about budgets.
 PersonaBudget = PersonaPolicy
 
 
@@ -150,7 +150,7 @@ def load_benchmark_config(path: str | Path) -> BenchmarkConfig:
     Sibling-file paths (``schema_path``, ``pricing_path``) are resolved
     **relative to the config file's directory** when they're written as
     relative paths in the YAML. This keeps the ``config/`` folder
-    self-contained — moving or renaming it doesn't require code edits.
+    self-contained, so moving or renaming it doesn't require code edits.
 
     Working-artifact paths (``paths.index_root`` / ``runs_root`` / etc., plus
     ``datasets[*].paths``) stay cwd-relative since they refer to outputs and

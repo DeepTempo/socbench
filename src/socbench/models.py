@@ -52,7 +52,7 @@ class Flow(BaseModel):
 
 
 class Pair(BaseModel):
-    """One row of ``pairs.jsonl`` — per ``(src_ip, dst_ip)`` aggregate."""
+    """One row of ``pairs.jsonl``: per ``(src_ip, dst_ip)`` aggregate."""
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -70,7 +70,7 @@ class Pair(BaseModel):
 
 
 class Host(BaseModel):
-    """One row of ``hosts.jsonl`` — per ``src_ip`` aggregate."""
+    """One row of ``hosts.jsonl``: per ``src_ip`` aggregate."""
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 

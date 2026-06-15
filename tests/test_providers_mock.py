@@ -1,7 +1,7 @@
 """MockAdapter behaviour: default script, custom script, reset, force-final.
 
 The mock is always available (no SDK deps) and underpins every other test
-that exercises the agent loop — its behaviour is the contract the loop
+that exercises the agent loop; its behaviour is the contract the loop
 relies on.
 """
 from __future__ import annotations

@@ -34,26 +34,26 @@
 
 ---
 
-## Dataset: `<dataset name>` — `<YYYY-MM-DD>` snapshot
+## Dataset: `<dataset name>` (`<YYYY-MM-DD>` snapshot)
 
-### Headline (main) — F1 / cost / reliability
+### Headline (main): F1 / cost / reliability
 
 One row per `(provider, persona)`, macro-averaged across all strata.
 
 | Provider | Persona | per-flow F1 | per-pair F1 | per-host F1 | cost (USD) | first-pass valid |
 |---|---|--:|--:|--:|--:|--:|
-| openai | soc_analyst | – | – | – | – | – |
-| openai | threat_analyst | – | – | – | – | – |
-| openai | adversary_hunter | – | – | – | – | – |
-| openai | detection_engineer | – | – | – | – | – |
-| anthropic | soc_analyst | – | – | – | – | – |
-| anthropic | threat_analyst | – | – | – | – | – |
-| anthropic | adversary_hunter | – | – | – | – | – |
-| anthropic | detection_engineer | – | – | – | – | – |
-| gemini | soc_analyst | – | – | – | – | – |
-| gemini | threat_analyst | – | – | – | – | – |
-| gemini | adversary_hunter | – | – | – | – | – |
-| gemini | detection_engineer | – | – | – | – | – |
+| openai | soc_analyst | - | - | - | - | - |
+| openai | threat_analyst | - | - | - | - | - |
+| openai | adversary_hunter | - | - | - | - | - |
+| openai | detection_engineer | - | - | - | - | - |
+| anthropic | soc_analyst | - | - | - | - | - |
+| anthropic | threat_analyst | - | - | - | - | - |
+| anthropic | adversary_hunter | - | - | - | - | - |
+| anthropic | detection_engineer | - | - | - | - | - |
+| gemini | soc_analyst | - | - | - | - | - |
+| gemini | threat_analyst | - | - | - | - | - |
+| gemini | adversary_hunter | - | - | - | - | - |
+| gemini | detection_engineer | - | - | - | - | - |
 
 ### Per-stratum per-flow F1 (main)
 
@@ -62,7 +62,7 @@ One row per `(provider, persona)`; one column per stratum. Empty strata
 
 | Provider | Persona | pair·benign | pair·malicious | pair·mixed | host·benign | host·malicious | host·mixed |
 |---|---|--:|--:|--:|--:|--:|--:|
-| openai | soc_analyst | – | – | – | – | – | – |
+| openai | soc_analyst | - | - | - | - | - | - |
 | … | … | | | | | | |
 
 ### Ablation deltas
@@ -74,9 +74,9 @@ units (populated only when its full artifacts exist).
 
 | Ablation | Provider | Persona | Δ per-flow F1 | Δ per-pair F1 | Δ per-host F1 | Δ first-pass valid | Δ cost (USD) |
 |---|---|---|--:|--:|--:|--:|--:|
-| tools_off → main | openai | soc_analyst | – | – | – | – | – |
-| playbooks_off → main | openai | soc_analyst | – | – | – | – | – |
-| single_shot_baseline → main | openai | soc_analyst | – | – | – | – | – |
+| tools_off → main | openai | soc_analyst | - | - | - | - | - |
+| playbooks_off → main | openai | soc_analyst | - | - | - | - | - |
+| single_shot_baseline → main | openai | soc_analyst | - | - | - | - | - |
 
 ### Cache (cost attribution)
 
@@ -84,9 +84,9 @@ From the `summary.json` `cache` block.
 
 | Provider | cached tokens | hit rate | savings (USD) |
 |---|--:|--:|--:|
-| openai | – | – | – |
-| anthropic | – | – | – |
-| gemini | – | – | – |
+| openai | - | - | - |
+| anthropic | - | - | - |
+| gemini | - | - | - |
 
 ---
 

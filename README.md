@@ -17,19 +17,18 @@ budget.
 
 ## Status
 
-Alpha — the full pipeline runs end-to-end. Build-out follows the steps in
-[`docs/implementation-plan.md`](docs/implementation-plan.md):
+Alpha. The full pipeline runs end-to-end. Build-out covered:
 
-- **Step 1** — package skeleton, contracts, configs, schema
-- **Step 2** — the index builder (`socbench build-index`) with deterministic
+- **Step 1**: package skeleton, contracts, configs, schema
+- **Step 2**: the index builder (`socbench build-index`) with deterministic
   content-addressed indexes
-- **Step 3** — read-only tools layer with persona allowlist + sample builder
-- **Step 4** — personas, playbooks, prompt compose + forbidden-token check
-- **Step 5** — provider adapters (OpenAI / Anthropic / Gemini + always-on
+- **Step 3**: read-only tools layer with persona allowlist + sample builder
+- **Step 4**: personas, playbooks, prompt compose + forbidden-token check
+- **Step 5**: provider adapters (OpenAI / Anthropic / Gemini + always-on
   mock) and the multi-turn agent loop with budget caps and cost/latency rollups
-- **Step 6** — scoring (per-flow / per-pair / per-host F1), stratified
+- **Step 6**: scoring (per-flow / per-pair / per-host F1), stratified
   sampling, ablation aggregation
-- **Step 7** — quickstart + results-explorer notebooks, `RESULTS.md` /
+- **Step 7**: quickstart + results-explorer notebooks, `RESULTS.md` /
   `RESULTS_REPRODUCE.md`
 
 You can run a complete smoke today with **no API keys** via the mock provider
@@ -76,7 +75,7 @@ Either way, `socbench --help` should now list the available subcommands.
 | Provider API keys | env vars `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GOOGLE_API_KEY` | shell env |
 
 `config/benchmark_config.yaml` ships safe defaults: smoke `cost_budget_usd: 10`,
-full `cost_budget_usd: 500`, fixed `cost_usd_cap_per_rendering: 0.50`. Paths
+full `cost_budget_usd: 900`, fixed `cost_usd_cap_per_rendering: 0.50`. Paths
 inside it that point at sibling config files (`schema_path`, `pricing_path`)
 resolve relative to the YAML's own directory, so renaming or relocating
 `config/` doesn't require any code edits.
@@ -113,7 +112,7 @@ and prints a summary, with no model calls.
 ### 3. Run the benchmark
 
 ```bash
-# Free, deterministic, no API keys — the mock provider:
+# Free, deterministic, no API keys (the mock provider):
 socbench run --dataset-hash <dataset_hash> --providers mock --personas all
 
 # Real models (after `pip install -e ".[providers]"` + exporting API keys):
@@ -143,82 +142,35 @@ dataset so it needs no committed data) and plots per-persona F1.
 results by stratum, persona, and provider. Install with
 `pip install -e ".[notebooks]"`.
 
-## Repository layout
-
-```
-socbench/
-├── pyproject.toml
-├── README.md
-├── RESULTS.md                    # published-numbers skeleton
-├── RESULTS_REPRODUCE.md          # exact commands behind each RESULTS row
-├── LICENSE                       # Apache-2.0
-├── config/                       # all YAML / JSON config in one place
-│   ├── benchmark_config.yaml     # defaults, persona policy, providers, datasets
-│   ├── pricing.yaml              # snapshot-dated provider pricing
-│   ├── schema.json               # canonical NetFlow schema + aliases
-│   └── prompts/                  # personas, playbooks, output contract (Step 4)
-├── docs/
-│   └── implementation-plan.md    # staged build-out roadmap
-├── data/
-│   └── sample/                   # ≤ 10 MB sample dataset
-├── scripts/
-│   └── build_sample_from_real.py # builds data/sample/ from a real source
-├── notebooks/                    # quickstart, results explorer (Step 7)
-├── src/socbench/                 # module-level files, not deep subpackages
-│   ├── __init__.py / _version.py
-│   ├── hashing.py                # deterministic content-addressed hashing
-│   ├── logging_config.py
-│   ├── config.py                 # typed loaders for benchmark_config / pricing
-│   ├── schema.py                 # canonical record + alias + label inference
-│   ├── models.py                 # pydantic v2 contracts (Flow, EvalUnit, ...)
-│   ├── index.py                  # Step A: corpus index builder
-│   ├── prompts.py                # Step 4: compose + forbidden-token check
-│   ├── agent.py                  # Step 5: agent loop + Runner + summary rollups
-│   ├── scoring.py                # Step 6: per-flow / per-pair / per-host F1
-│   ├── sampling.py               # Step 6: stratified sampler
-│   ├── aggregate.py              # Step 6: ablation joiner
-│   ├── cli.py                    # `socbench` entrypoint
-│   ├── providers/                # Step 5: one file per adapter
-│   │   ├── base.py               #   Adapter ABC + request/response models + factory
-│   │   ├── mock_adapter.py       #   deterministic, always-on, no SDK
-│   │   ├── openai_adapter.py / anthropic_adapter.py / gemini_adapter.py
-│   └── tools/                    # Step 3: read-only tool layer
-│       ├── base.py               #   Tool ABC + ToolContext + ToolRegistry
-│       ├── smoke.py              #   diagnostic runner
-│       └── catalog/              #   one file per shipped tool (+ build_default_registry)
-└── tests/
-```
-
 ## Extending the benchmark
 
 Every interface designed to evolve is a registry or a YAML key:
 
-- **New tool** — drop a new file under `src/socbench/tools/catalog/<name>.py`
+- **New tool**: drop a new file under `src/socbench/tools/catalog/<name>.py`
   with a `Tool` subclass, register it in `src/socbench/tools/catalog/__init__.py`
   by appending to `ALL_TOOLS`, then add its name to the appropriate persona
   `tools:` lists in `config/benchmark_config.yaml`. The `tools_manifest_sha`
-  shifts automatically. Filename ↔ YAML name ↔ matrix entry are 1:1 by design.
-- **New eval-unit type** — add an assigner to `src/socbench/index.py` and a
+  shifts automatically. Filename, YAML name, and matrix entry are 1:1 by design.
+- **New eval-unit type**: add an assigner to `src/socbench/index.py` and a
   matching `Literal` to `EvalUnitType` in `src/socbench/models.py`.
-- **New provider adapter** — implement the `Adapter` ABC in a new
+- **New provider adapter**: implement the `Adapter` ABC in a new
   `src/socbench/providers/<name>_adapter.py`, register it in the
   `build_adapter` factory in `providers/base.py`, and add an entry under
   `providers:` in `config/benchmark_config.yaml`. Pricing goes in
   `config/pricing.yaml`. SDK imports stay lazy so the dependency is optional.
-- **New persona** — add a block under `agent.personas:` in
+- **New persona**: add a block under `agent.personas:` in
   `config/benchmark_config.yaml` with its budget and `tools:` allowlist.
-- **New scoring lens** — add a lens to `score_unit` in `src/socbench/scoring.py`
+- **New scoring lens**: add a lens to `score_unit` in `src/socbench/scoring.py`
   and a matching field to `EvalUnitSummary` in `models.py`.
-- **New ablation** — extend the `Ablation` handling in `prompts.py` / `agent.py`
+- **New ablation**: extend the `Ablation` handling in `prompts.py` / `agent.py`
   and the tag list in `aggregate.py`.
 
 ## Methodology
 
-The full methodology — eval units, persona × tool matrix, agent loop, scoring,
-cost model, repair policy, sampling, ablations, run artifacts — is implemented
+The full methodology (eval units, persona x tool matrix, agent loop, scoring,
+cost model, repair policy, sampling, ablations, run artifacts) is implemented
 across the module-level files in `src/socbench/` (each carries a focused module
-docstring). The staged implementation roadmap is in
-[`docs/implementation-plan.md`](docs/implementation-plan.md).
+docstring).
 
 ## License
 

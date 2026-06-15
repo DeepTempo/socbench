@@ -13,7 +13,7 @@ paths:
   ablations_root: ablations
   cache_dir: .cache
 
-# Step A — corpus index
+# Step A: corpus index
 index:
   # host_egress assignment threshold: a src_ip reaching >= K distinct dst_ips
   # (label-agnostic) within the time window is scoped as host_egress instead of
@@ -36,7 +36,7 @@ index:
 # Agent loop policy
 # Each persona declares both its loop budget (turns / tool calls / wall clock)
 # and the exact set of tools it may invoke. This block is the single source of
-# truth for the persona × tool matrix — the tool registry, prompt assembly,
+# truth for the persona x tool matrix. The tool registry, prompt assembly,
 # and the agent loop all read from here.
 #
 # Editing `tools:` for any persona changes the `tools_manifest_sha` recorded
@@ -114,7 +114,7 @@ sampling:
     full_unit_cap: 1500
     cost_budget_usd: 900
 
-# Providers — wired into the agent loop. Model identities are pinned per run.
+# Providers: wired into the agent loop. Model identities are pinned per run.
 providers:
   openai:
     enabled: false

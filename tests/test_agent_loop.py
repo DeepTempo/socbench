@@ -65,7 +65,7 @@ class _StatelessStubAdapter(Adapter):
 
 
 class _AlwaysFatalAdapter(Adapter):
-    """Adapter that always raises a fatal error — every rendering is fatal.
+    """Adapter that always raises a fatal error: every rendering is fatal.
 
     Sleeps briefly so the single in-flight rendering can't blow through the
     whole backlog before the orchestrating coroutine reacts and opens the
@@ -192,7 +192,7 @@ def test_force_final_on_turn_cap(
     # the model to commit.
     script = [
         _CannedResponse.tool_call("list_pairs", {"limit": 3}),
-        # force_final overrides this — adapter returns a forced submission.
+        # force_final overrides this: adapter returns a forced submission.
         _CannedResponse.submit(verdict="benign", confidence=0.5, rationale="ok"),
     ]
     adapter = MockAdapter.with_script("mock-test", script)
@@ -220,7 +220,7 @@ def test_force_final_on_cost_cap(
     # response that simulates a higher token count… actually the simpler
     # path is to look up pricing for a real provider model. But mock has
     # no pricing entry, so cost is always 0. Instead, simulate by setting
-    # cost cap = 0.0 — the first turn pushes >= 0.0, so cap fires.
+    # cost cap = 0.0: the first turn pushes >= 0.0, so cap fires.
     loop = _make_loop(
         cfg=cfg, registry=registry, tool_context=tool_context,
         prompt_parts=prompt_parts, label_inference=label_inference,
@@ -241,7 +241,7 @@ def test_disallowed_tool_returns_recoverable_error(
     cfg, registry, tool_context, prompt_parts, label_inference, pricing, output_contract, eval_units
 ):
     """When the model calls a tool not in the persona allowlist, the loop must
-    NOT crash — it surfaces an error tool-result and continues."""
+    NOT crash; it surfaces an error tool-result and continues."""
     # soc_analyst doesn't have port_proto_matrix in its allowlist.
     script = [
         _CannedResponse.tool_call("port_proto_matrix", {"host": "10.0.0.1"}),
@@ -456,7 +456,7 @@ def test_runner_concurrent_records_every_rendering(
     assert len(rendering_lines) == expected
     assert len(summary_lines) == expected
 
-    # Every (unit, persona) rendering recorded exactly once — no races dropped
+    # Every (unit, persona) rendering recorded exactly once: no races dropped
     # or duplicated a row.
     ids = {json.loads(ln)["rendering_id"] for ln in rendering_lines}
     assert len(ids) == expected
@@ -493,7 +493,7 @@ def test_runner_circuit_breaker_stops_failing_provider(
         provider_concurrency={"stub": 1},
         provider_circuit_threshold={"stub": 3},
     )
-    # Pad to a large backlog (repeating units is fine — we only count
+    # Pad to a large backlog (repeating units is fine: we only count
     # renderings). The breaker should cancel most of it once 3 consecutive
     # fatals are recorded.
     units = (eval_units * 20)[:40]

@@ -1,22 +1,22 @@
-"""Step 6 — scoring.
+"""Step 6: scoring.
 
 Three co-primary lenses, all computed against the eval unit's seeded gold
 flow set:
 
-- **per-flow**  — predicted-malicious membership vs. gold, flow by flow.
-- **per-IP-pair** — a distinct ``(src_ip, dst_ip)`` is "malicious" if any of
+- **per-flow**:  predicted-malicious membership vs. gold, flow by flow.
+- **per-IP-pair**: a distinct ``(src_ip, dst_ip)`` is "malicious" if any of
   its flows is; precision/recall/F1 over the distinct pairs in the unit.
-- **per-host**  — same, keyed by ``src_ip`` (the meaningful lens for
+- **per-host**:  same, keyed by ``src_ip`` (the meaningful lens for
   ``host_egress`` units that fan out across destinations).
 
 Gold lives in the content-addressed index (``flows.parquet`` keeps the
 ``_is_malicious`` / ``_flow_id`` columns that the tool layer strips). The
-scorer reads it directly — it is the only component besides the index
+scorer reads it directly; it is the only component besides the index
 builder allowed to see ground truth.
 
 Scoring boundary: predictions are clamped to the unit's seeded
 ``flow_ids``. Anything the model cites outside that set is out of scope and
-ignored — the eval unit, not the model's wandering, defines what counts.
+ignored; the eval unit, not the model's wandering, defines what counts.
 """
 from __future__ import annotations
 
@@ -178,9 +178,9 @@ class UnitScore:
 def detect_defect(verdict: Verdict | None, predicted_in_scope: list[int]) -> str | None:
     """Defect detection.
 
-    ``predicted_in_scope`` is the *effective* malicious set — explicit
+    ``predicted_in_scope`` is the *effective* malicious set: explicit
     ``malicious_flow_indices`` unioned with the expansion of
-    ``malicious_destinations`` — so a malicious verdict backed only by
+    ``malicious_destinations``, so a malicious verdict backed only by
     destinations is not a defect.
 
     - ``verdict=benign`` with non-empty set → ``verdict_indices_mismatch``
@@ -214,7 +214,7 @@ def score_unit(
 
     When ``observed_flow_ids`` / ``observed_destinations`` are supplied (the
     flow_ids and dst_ips the model actually saw in this rendering's tool
-    responses), predictions are additionally clamped to them — enforcing the
+    responses), predictions are additionally clamped to them, enforcing the
     kickoff rule that every cited flow must appear in a tool response, so a
     model can't earn precision by guessing in-scope ids it never investigated.
     Gold stays the full in-scope malicious set, so recall still penalises

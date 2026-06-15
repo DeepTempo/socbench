@@ -85,7 +85,7 @@ for p in "${SELECTED[@]}"; do
     echo "  [OK]   $p"
     grep -E '"run_dir"|"total_cost_usd"|"aborted_for_budget"' "$LOG_DIR/${STAMP}_${p}.log" || true
   else
-    echo "  [FAIL] $p (exit $?) — see $LOG_DIR/${STAMP}_${p}.log" >&2
+    echo "  [FAIL] $p (exit $?); see $LOG_DIR/${STAMP}_${p}.log" >&2
     rc=1
   fi
 done

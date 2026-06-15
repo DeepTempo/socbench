@@ -16,7 +16,7 @@ currency: USD
 
 providers:
   openai:
-    # https://openai.com/api/pricing/ — standard short-context tier (<=272K).
+    # https://openai.com/api/pricing/ (standard short-context tier, <=272K).
     gpt-5.5:
       input:         5.00
       cached_input:  0.50
@@ -29,7 +29,7 @@ providers:
       reasoning:     15.00
 
   anthropic:
-    # https://www.anthropic.com/pricing#api — cache_read is 0.1x input.
+    # https://www.anthropic.com/pricing#api (cache_read is 0.1x input).
     claude-opus-4-7:
       input:         5.00
       cached_input:  0.50
@@ -42,7 +42,7 @@ providers:
       reasoning:     15.00
 
   gemini:
-    # https://ai.google.dev/gemini-api/docs/pricing — standard tier (<=200K).
+    # https://ai.google.dev/gemini-api/docs/pricing (standard tier, <=200K).
     gemini-2.5-pro:
       input:         1.25
       cached_input:  0.125

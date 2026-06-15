@@ -1,4 +1,4 @@
-"""``host_rollup`` — pre-computed rollup stats for a single host.
+"""``host_rollup``: pre-computed rollup stats for a single host.
 
 Persona allowlist: SOC, Threat, Hunter, DE.
 """
