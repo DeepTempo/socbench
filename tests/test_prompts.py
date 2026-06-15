@@ -1,4 +1,4 @@
-"""Step 4 — prompt loading, compose pipeline, forbidden-token check, manifests."""
+"""Step 4: prompt loading, compose pipeline, forbidden-token check, manifests."""
 from __future__ import annotations
 
 from pathlib import Path

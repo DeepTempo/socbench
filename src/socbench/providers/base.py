@@ -3,11 +3,11 @@
 Every provider adapter normalises its SDK-specific call into one of two
 shapes, defined here:
 
-- :class:`AdapterRequest`  — what the agent loop hands to the provider
+- :class:`AdapterRequest`:  what the agent loop hands to the provider
   (system scaffold, conversation, tool schemas, output contract, sampling
   knobs). The system + tool_schemas + output_contract block is treated as
   the stable cacheable prefix.
-- :class:`AdapterResponse` — what the provider returns to the agent loop
+- :class:`AdapterResponse`: what the provider returns to the agent loop
   (text and/or a tool_use, finish reason, and a complete token-usage block
   including `cached_tokens` so the cost model can attribute cache savings).
 
@@ -34,7 +34,7 @@ class AdapterError(RuntimeError):
 
 
 class RetryableAdapterError(AdapterError):
-    """Transient failure — agent loop SHOULD retry with backoff.
+    """Transient failure: agent loop SHOULD retry with backoff.
 
     ``retry_after_seconds`` carries the provider's ``Retry-After`` hint when
     present (e.g. on HTTP 429), so the agent loop can wait the advised time
@@ -47,7 +47,7 @@ class RetryableAdapterError(AdapterError):
 
 
 class FatalAdapterError(AdapterError):
-    """Permanent failure — agent loop MUST mark the rendering invalid."""
+    """Permanent failure: agent loop MUST mark the rendering invalid."""
 
 
 # ---------------------------------------------------------------------------
@@ -172,7 +172,7 @@ class Adapter(ABC):
         """Blocking convenience wrapper around :meth:`invoke`.
 
         For one-off / synchronous callers (tests, simple scripts). MUST NOT be
-        called from within a running event loop — the async :meth:`invoke` is
+        called from within a running event loop; the async :meth:`invoke` is
         the path the Runner uses.
         """
         return asyncio.run(self.invoke(request))
@@ -180,7 +180,7 @@ class Adapter(ABC):
     def reset(self) -> None:
         """Clear any per-rendering adapter state.
 
-        Real adapters are stateless API clients — the default no-op is
+        Real adapters are stateless API clients; the default no-op is
         correct. The mock adapter overrides to reset its script cursor so
         one instance can drive many renderings.
         """

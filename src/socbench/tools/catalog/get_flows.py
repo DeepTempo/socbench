@@ -1,4 +1,4 @@
-"""``get_flows`` — fetch flow records by explicit flow_id list.
+"""``get_flows``: fetch flow records by explicit flow_id list.
 
 Persona allowlist: SOC, Threat, Hunter, DE.
 """

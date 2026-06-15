@@ -13,12 +13,12 @@ from typing import Literal
 
 try:
     from pythonjsonlogger.json import JsonFormatter  # type: ignore[import-not-found]
-except ImportError:  # pragma: no cover — fallback for older python-json-logger
+except ImportError:  # pragma: no cover: fallback for older python-json-logger
     from pythonjsonlogger.jsonlogger import JsonFormatter  # type: ignore[import-not-found,no-redef]
 
 LogFormat = Literal["json", "human"]
 
-_HUMAN_FORMAT = "%(asctime)s %(levelname)-7s %(name)s — %(message)s"
+_HUMAN_FORMAT = "%(asctime)s %(levelname)-7s %(name)s | %(message)s"
 
 
 def configure_logging(level: str | int = "INFO", *, fmt: LogFormat | None = None) -> None:

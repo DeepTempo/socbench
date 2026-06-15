@@ -4,8 +4,8 @@ All artifact identifiers (``dataset_hash``, ``tools_manifest_sha``,
 ``prompts_manifest_sha``, ``playbooks_manifest_sha``, ``rendering_id``,
 ``eval_unit_id``) flow through helpers in this module so the algorithm is
 controlled in one place. Stability across Python versions and platforms is a
-hard requirement — every published number in ``RESULTS.md`` is tagged with one
-or more of these hashes.
+hard requirement: every published number is tagged with one or more of these
+hashes.
 """
 from __future__ import annotations
 
@@ -80,7 +80,7 @@ def short_hash(value: Any, *, length: int = 8) -> str:
 def hash_flow_ids(flow_ids: Iterable[int]) -> str:
     """Stable hash of a flow-id set (used in ``eval_unit_id`` derivation).
 
-    The input order is irrelevant — we sort first.
+    The input order is irrelevant; we sort first.
     """
     sorted_ids = sorted(int(x) for x in flow_ids)
     return hash_obj(sorted_ids)

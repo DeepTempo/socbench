@@ -1,4 +1,4 @@
-"""``rarity_stats`` — frequency tail of dst_port and dst_ip across a scope.
+"""``rarity_stats``: frequency tail of dst_port and dst_ip across a scope.
 
 Persona allowlist: Hunter, DE. Useful for hunting beacons and
 uncommon egress.

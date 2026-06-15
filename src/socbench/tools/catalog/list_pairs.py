@@ -1,4 +1,4 @@
-"""``list_pairs`` — enumerate (src_ip, dst_ip) pairs with summary stats.
+"""``list_pairs``: enumerate (src_ip, dst_ip) pairs with summary stats.
 
 Persona allowlist: SOC, Threat, Hunter, DE.
 """

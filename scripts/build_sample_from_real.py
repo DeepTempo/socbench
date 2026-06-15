@@ -188,7 +188,7 @@ def _write_provenance(
         Cybersecurity. Users are responsible for complying with its terms of
         use. socbench's redistribution of this small subset is for
         non-commercial research benchmarking. Replace this file at any time
-        with a different dataset of your choosing — `socbench build-index`
+        with a different dataset of your choosing. `socbench build-index`
         does not depend on which dataset you point it at, as long as the
         canonical schema in `config/schema.json` can resolve the columns.
 

@@ -1,8 +1,9 @@
-# Reproducing the numbers in RESULTS.md
+# Reproducing the published numbers
 
-Every row in [`RESULTS.md`](RESULTS.md) comes from the artifacts of a small set
-of `socbench` invocations. This file lists the exact commands and the config
-values they pin, so any reader can regenerate a section on their own API keys.
+The numbers published on the [SOCBench landing page](https://deeptempo.github.io/socbench/)
+come from the artifacts of a small set of `socbench` invocations. This file
+lists the exact commands and the config values they pin, so any reader can
+regenerate them on their own API keys.
 
 ## 0. Environment
 
@@ -19,9 +20,9 @@ export GOOGLE_API_KEY=...
 
 The pinned models, budgets, and persona policies all live in
 `config/benchmark_config.yaml`; pricing in `config/pricing.yaml`. A published
-section is only valid for the `*_manifest_sha` / `pricing_snapshot_date` values
-recorded in its provenance header — if you change a prompt, tool, playbook, or
-rate, you produce a **new** section.
+result is only valid for the `*_manifest_sha` / `pricing_snapshot_date` values
+recorded in its run metadata. If you change a prompt, tool, playbook, or rate,
+you produce a **new** result.
 
 ## 1. Build the index (Step A)
 
@@ -31,7 +32,7 @@ socbench build-index --config config/benchmark_config.yaml --dataset <dataset>
 ```
 
 `build-index` is content-addressed and idempotent. Re-running on identical
-input is a no-op; pass `--rebuild` to force. Record the printed `<HASH>` — it is
+input is a no-op; pass `--rebuild` to force. Record the printed `<HASH>`; it is
 the reproducibility key shared by every run and ablation below.
 
 ## 2. Headline run (`main` ablation)
@@ -48,28 +49,37 @@ socbench run \
 ```
 
 - `--mode smoke` uses the `sampling.smoke` config (1 unit / non-empty stratum,
-  min 8); `--mode full` uses `sampling.full` (10 / stratum, cap 60).
+  min 8); `--mode full` uses `sampling.full` (500 / stratum, cap 1500).
 - `--providers all` runs every provider with `enabled: true` in config; use a
   CSV (`--providers openai,anthropic`) to run a subset, or `mock` for a free
   dry run.
 - Unit selection defaults to stratified sampling (deterministic in
   `(dataset_hash, sample_seed, mode)`). `--unit-id` / `--limit` override it for
-  debugging only — published rows always use the sampler.
+  debugging only; published rows always use the sampler.
 - The smoke `cost_budget_usd` guardrail (default $10) stops the run cleanly if
   exceeded and writes a partial summary.
 
-The **Headline**, **Per-stratum**, and **Cache** tables in `RESULTS.md` are read
-from this run's `runs/<run_id>/summary.json` (the `scoring` and `cache` blocks)
-and `eval_units_summary.jsonl` (per-stratum grouping).
+For a full multi-provider headline run with per-provider budget caps (the
+shape of a published result row), use `scripts/run_full_benchmark.sh`
+instead of calling `socbench run` directly. It launches one run per provider
+in parallel, applying distinct `--cost-budget-usd` ceilings (currently $700
+for openai and gemini, $900 for anthropic) so each provider stops at its own
+console usage limit. The script reads `DATASET_HASH`, `MODE`, `ABLATION`, and
+`PROVIDERS` from the environment; defaults are `MODE=full ABLATION=main
+PROVIDERS=all`.
+
+The **headline**, **per-stratum**, and **cache** numbers come from this run's
+`runs/<run_id>/summary.json` (the `scoring` and `cache` blocks) and
+`eval_units_summary.jsonl` (per-stratum grouping).
 
 ## 3. Mandatory ablations
 
 ```bash
-# tools_off — allowlist reduced to submit_assessment only (smoke + full)
+# tools_off: allowlist reduced to submit_assessment only (smoke + full)
 socbench run --config config/benchmark_config.yaml --dataset-hash <HASH> \
   --mode smoke --ablation tools_off --providers all --personas all
 
-# playbooks_off — per-persona playbook emptied; playbook_common still applies (smoke only)
+# playbooks_off: per-persona playbook emptied; playbook_common still applies (smoke only)
 socbench run --config config/benchmark_config.yaml --dataset-hash <HASH> \
   --mode smoke --ablation playbooks_off --providers all --personas all
 ```
@@ -84,11 +94,12 @@ socbench aggregate --config config/benchmark_config.yaml --dataset-hash <HASH>
 # → writes ablations/<HASH>/<seed>/ablation_summary.json
 ```
 
-The **Ablation deltas** table reads `tools_off → main`, `playbooks_off → main`,
-and (when present) `single_shot_baseline → main` from this file. The aggregator
-picks the most recent run per ablation tag and requires a `main` run to exist.
+The **ablation deltas** are `tools_off -> main`, `playbooks_off -> main`, and
+(when present) `single_shot_baseline -> main`, read from this file. The
+aggregator picks the most recent run per ablation tag and requires a `main`
+run to exist.
 
-## 5. Fill in the provenance header
+## 5. Record provenance
 
 Read the manifest SHAs and pricing snapshot straight from the run:
 
@@ -102,7 +113,9 @@ for k in ("dataset_hash","sample_seed","mode","prompts_manifest_sha",
 PY
 ```
 
-Copy those into the provenance header of the matching `RESULTS.md` section.
+These fields identify the configuration that produced the run, and are the
+keys you would attach when submitting a result for inclusion alongside the
+published numbers.
 
 ## Free, no-key dry run
 

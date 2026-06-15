@@ -1,4 +1,4 @@
-"""``submit_assessment`` — terminal action; the agent loop ends after this call.
+"""``submit_assessment``: terminal action; the agent loop ends after this call.
 
 Persona allowlist: SOC, Threat, Hunter, DE (mandatory for all).
 The args schema mirrors :class:`socbench.models.SubmitAssessment`; strict
@@ -20,7 +20,7 @@ class SubmitAssessmentTool(Tool):
         "in [0, 1], the flow_ids judged malicious, and a rationale. For "
         "host_egress (fan-out) units you may instead name the malicious "
         "destination IPs in `malicious_destinations` rather than listing "
-        "every flow_id — the harness expands each destination to its flows."
+        "every flow_id; the harness expands each destination to its flows."
     )
     args_schema: ClassVar[dict[str, Any]] = {
         "type": "object",

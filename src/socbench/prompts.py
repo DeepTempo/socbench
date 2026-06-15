@@ -1,14 +1,14 @@
-"""Step 4 — prompt assembly + forbidden-token check + manifest hashing.
+"""Step 4: prompt assembly + forbidden-token check + manifest hashing.
 
 Public entrypoints:
 
-- :func:`load_prompts` — reads the on-disk tree under ``config/prompts/`` and
+- :func:`load_prompts`: reads the on-disk tree under ``config/prompts/`` and
   returns a :class:`PromptParts` snapshot of the content (single source of
   truth for both compose and the manifest hashes).
-- :func:`compose` — assembles the system prompt for one (persona, ablation)
+- :func:`compose`: assembles the system prompt for one (persona, ablation)
   in the required compose order and runs the forbidden-token check on
   the assembled string before returning.
-- :func:`prompts_manifest_sha` / :func:`playbooks_manifest_sha` — content
+- :func:`prompts_manifest_sha` / :func:`playbooks_manifest_sha`: content
   hashes recorded in run artifacts so two runs can be checked for
   prompt-side comparability without diffing files.
 
@@ -16,10 +16,10 @@ The forbidden-token check enforces the "process and generic patterns only"
 rule for playbooks. The forbidden set is built from three sources, all
 centralised so nothing is hardcoded twice:
 
-1. ``socbench.tools.base.GROUND_TRUTH_FIELDS`` — label-derived column names
+1. ``socbench.tools.base.GROUND_TRUTH_FIELDS``: label-derived column names
    that already gate tool responses (the tool-layer leak guard).
 2. ``schema.label_inference.{attack_columns, label_columns,
-   attack_family_strings_used_for_forbidden_token_check}`` — declarative
+   attack_family_strings_used_for_forbidden_token_check}``: declarative
    knobs in ``config/schema.json``.
 3. Structural regexes for IPv4/IPv6 literals and MD5/SHA1/SHA256 hex hashes.
 """
@@ -39,7 +39,7 @@ Ablation = Literal["main", "tools_off", "playbooks_off"]
 
 
 # The scaffold is part of ``prompts_manifest_sha``. Edit it the same way you
-# would edit any prompt text — the hash will rotate, and downstream comparisons
+# would edit any prompt text: the hash will rotate, and downstream comparisons
 # will correctly treat pre/post-edit runs as different prefixes.
 SYSTEM_SCAFFOLD = (
     "You are a security agent investigating network traffic captured from a "
@@ -58,7 +58,7 @@ SYSTEM_SCAFFOLD = (
 class ForbiddenTokenInPrompt(RuntimeError):
     """Raised when assembled prompt content matches a forbidden pattern.
 
-    Fix by editing the offending fragment — never by relaxing this check.
+    Fix by editing the offending fragment; never by relaxing this check.
     """
 
 
@@ -103,7 +103,7 @@ def check_forbidden_tokens(
 ) -> None:
     """Scan ``text`` and raise on the first forbidden match.
 
-    First match wins — fix it, re-run; subsequent matches surface one at a
+    First match wins; fix it, re-run; subsequent matches surface one at a
     time. Optimises for clear error messages over batch reporting.
     """
     for name, pattern in _build_forbidden_patterns(label_inference):
@@ -235,7 +235,7 @@ def prompts_manifest_sha(parts: PromptParts) -> str:
 
     Covers the system scaffold, the shared playbook (which persists under
     ``playbooks_off``), and every persona block. Does NOT include per-persona
-    playbooks — those are tracked separately by
+    playbooks; those are tracked separately by
     :func:`playbooks_manifest_sha` so the ``playbooks_off`` ablation rotates
     one hash without disturbing the other.
     """
