@@ -368,13 +368,13 @@
 
   // ------------- GitHub star count -------------
   // Public REST API; no auth required (unauth rate limit = 60/hr per IP).
-  // 24-hour localStorage cache to avoid re-hitting on every page view.
+  // 5-minute localStorage cache to avoid re-hitting on every page view.
   function loadStarCount() {
     const el = document.getElementById("repo-star-count");
     if (!el) return;
     const REPO = "DeepTempo/socbench";
     const CACHE_KEY = `gh-stars-${REPO}`;
-    const TTL_MS = 24 * 60 * 60 * 1000;
+    const TTL_MS = 5 * 60 * 1000;
 
     const cached = (() => {
       try {
