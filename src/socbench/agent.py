@@ -1096,7 +1096,11 @@ class Runner:
         # Per-flow predictions table (one row per flow in every evaluated
         # unit). Written even on budget abort so partial runs keep their rows.
         if per_flow_rows:
-            pl.DataFrame(per_flow_rows).write_parquet(
+            # infer_schema_length=None scans ALL rows for dtype inference. A
+            # short sample can pin a sparsely-populated column to the Null dtype
+            # and then raise "got non-null value for NULL-typed column" when a
+            # later row has a value — e.g. a run where most renderings failed.
+            pl.DataFrame(per_flow_rows, infer_schema_length=None).write_parquet(
                 paths.predictions_per_flow_parquet, compression="zstd", statistics=True
             )
 
@@ -1106,7 +1110,12 @@ class Runner:
             paths.predictions_raw_jsonl.exists()
             and paths.predictions_raw_jsonl.stat().st_size > 0
         ):
-            pl.read_ndjson(paths.predictions_raw_jsonl).write_parquet(
+            # Same full-scan inference: an all-fatal run leaves columns like
+            # tool_call_args_hash null in the sampled prefix, which otherwise
+            # crashes the parquet write.
+            pl.read_ndjson(
+                paths.predictions_raw_jsonl, infer_schema_length=None
+            ).write_parquet(
                 paths.predictions_raw_parquet, compression="zstd", statistics=True
             )
 
@@ -1455,6 +1464,16 @@ def _verdict_block(
         f1 = 0.0 if (precision is not None and recall is not None) else None
     else:
         f1 = round(2 * precision * recall / (precision + recall), 6)
+    # Coverage-adjusted: recall counts every malicious unit (invalid/forced = miss),
+    # and F1 pairs it with precision-over-valid — so a high `f1` on a thin valid
+    # subset can't hide dropped coverage.
+    cov_recall = (
+        round(tp / malicious_units_total, 6) if malicious_units_total else None
+    )
+    if precision is None or cov_recall is None or (precision + cov_recall) == 0:
+        cov_f1 = 0.0 if (precision is not None and cov_recall is not None) else None
+    else:
+        cov_f1 = round(2 * precision * cov_recall / (precision + cov_recall), 6)
     return {
         "tp": tp, "fp": fp, "tn": tn, "fn": fn,
         "accuracy": round((tp + tn) / total, 6) if total else None,
@@ -1462,9 +1481,8 @@ def _verdict_block(
         "recall": recall,
         "f1": f1,
         "malicious_units_total": malicious_units_total,
-        "coverage_adjusted_recall": (
-            round(tp / malicious_units_total, 6) if malicious_units_total else None
-        ),
+        "coverage_adjusted_recall": cov_recall,
+        "coverage_adjusted_f1": cov_f1,
     }
 
 
@@ -1560,6 +1578,61 @@ def _score_entry(group: list[EvalUnitSummary]) -> dict[str, Any]:
     }
 
 
+def _mean_opt(values: list[float | None]) -> float | None:
+    """Mean over the non-``None`` entries (``None`` if all are), so undefined
+    persona metrics are skipped rather than coerced to 0.0."""
+    nums = [v for v in values if v is not None]
+    return round(_mean(nums), 6) if nums else None
+
+
+def _provider_aggregate(scoring: dict[str, dict[str, Any]]) -> dict[str, Any]:
+    """Cross-persona rollup per provider (the leaderboard's mean-across-personas
+    view), emitted once: unweighted ``*_mean``, a ``units_weighted`` companion, and
+    ``coverage_adjusted_*`` siblings that fold invalid/forced renderings in as misses.
+    """
+    by_provider: dict[str, list[dict[str, Any]]] = {}
+    for key, entry in scoring.items():
+        provider = key.split("/", 1)[0]
+        by_provider.setdefault(provider, []).append(entry)
+
+    out: dict[str, Any] = {}
+    for provider, entries in sorted(by_provider.items()):
+        wsum = sum(e["units_scored"] for e in entries)
+        per_flow_weighted = (
+            round(
+                sum(e["per_flow_f1_macro"] * e["units_scored"] for e in entries) / wsum,
+                6,
+            )
+            if wsum
+            else None
+        )
+        out[provider] = {
+            "personas": len(entries),
+            "units": sum(e["units"] for e in entries),
+            "units_scored": wsum,
+            # Unweighted persona means — the published-leaderboard definition.
+            "per_flow_f1_mean": _mean_opt([e["per_flow_f1_macro"] for e in entries]),
+            "native_lens_f1_mean": _mean_opt([e["native_lens_f1"] for e in entries]),
+            "verdict_f1_mean": _mean_opt([e["verdict"]["f1"] for e in entries]),
+            "first_pass_valid_rate_mean": _mean_opt(
+                [e["first_pass_valid_rate"] for e in entries]
+            ),
+            # Honest, coverage-aware headline siblings (invalid/forced = miss).
+            "coverage_adjusted_recall_mean": _mean_opt(
+                [e["verdict"]["coverage_adjusted_recall"] for e in entries]
+            ),
+            "coverage_adjusted_verdict_f1_mean": _mean_opt(
+                [e["verdict"]["coverage_adjusted_f1"] for e in entries]
+            ),
+            "effective_per_flow_f1_mean": _mean_opt(
+                [e["effective_per_flow_f1"] for e in entries]
+            ),
+            # Units-weighted per-flow F1 — corrects the mean-of-means bias.
+            "per_flow_f1_units_weighted": per_flow_weighted,
+        }
+    return out
+
+
 def compute_summary(
     summaries: list[EvalUnitSummary],
     predictions_path: Path,
@@ -1631,6 +1704,9 @@ def compute_summary(
         f"{p}/{persona}": _score_entry(group)
         for (p, persona), group in sorted(score_buckets.items())
     }
+    # Cross-persona rollup per provider — the leaderboard's "mean across personas"
+    # headline, emitted once instead of re-derived by every reader.
+    out["scoring_by_provider"] = _provider_aggregate(out["scoring"])
 
     # Latency percentiles + per-provider token totals from per-call rows.
     per_call_lat: dict[str, list[int]] = {}

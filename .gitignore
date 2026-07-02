@@ -8,6 +8,7 @@ __pycache__/
 venv/
 env/
 .envrc
+.env
 
 build/
 dist/
