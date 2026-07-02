@@ -100,6 +100,10 @@ class AnthropicAdapter(Adapter):
                     "type": "tool",
                     "name": request.output_contract_tool_name,
                 }
+            elif request.require_tool_call:
+                # Investigation gate: submit is withheld from ``tools`` upstream,
+                # so "any" forces an investigative tool call this turn.
+                kwargs["tool_choice"] = {"type": "any"}
             else:
                 kwargs["tool_choice"] = {"type": "auto"}
 
@@ -270,7 +274,6 @@ def _safe_json_dict(value: Any) -> dict[str, Any]:
                 return parsed
         except json.JSONDecodeError:
             pass
-        
     return {}
 
 

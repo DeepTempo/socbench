@@ -7,6 +7,7 @@ plumbing and structured-logging setup.
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 
 import click
@@ -238,6 +239,21 @@ def _resolve_providers(raw: str, cfg_provider_keys: list[str]) -> list[str]:
     default=None,
     help="Override cost_budget_usd from config. Run aborts cleanly when reached.",
 )
+@click.option(
+    "--explicit-tool-use-prompt",
+    is_flag=True,
+    default=False,
+    help="Use the explicit 'actually call tools, don't narrate' scaffold (sec8 shim). "
+    "Default off → neutral scaffold for capable models.",
+)
+@click.option(
+    "--context-window-tokens",
+    type=int,
+    default=None,
+    help="Served context window (max_model_len) for self-hosted models. Set it so the "
+    "loop force-submits before the transcript overflows and the server 400s. Omit for "
+    "hosted APIs (huge native window).",
+)
 def run_cmd(
     config_path: Path,
     prompts_dir: Path,
@@ -249,6 +265,8 @@ def run_cmd(
     unit_id: str | None,
     limit: int | None,
     cost_budget_usd: float | None,
+    explicit_tool_use_prompt: bool,
+    context_window_tokens: int | None,
 ) -> None:
     """Run the multi-turn SOC-agent benchmark over a built index.
 
@@ -289,14 +307,13 @@ def run_cmd(
         if name == "mock":
             model = "mock-default"
         elif name == "open_source":
-            # Model is read from config when present; otherwise fall back to the
-            # OPEN_SOURCE_MODEL env var (useful when the Vertex entrypoint passes
-            # --model directly without editing benchmark_config.yaml).
-            import os as _os
-            if name in cfg.providers:
+            # OPEN_SOURCE_MODEL (set by the deploy entrypoint to vLLM's served name)
+            # takes precedence over the config default, which varies per deployment.
+            env_model = os.environ.get("OPEN_SOURCE_MODEL")
+            if env_model:
+                model = env_model
+            elif name in cfg.providers:
                 model = cfg.providers[name].model  # type: ignore[assignment]
-            elif _os.environ.get("OPEN_SOURCE_MODEL"):
-                model = _os.environ["OPEN_SOURCE_MODEL"]
             else:
                 raise click.ClickException(
                     "open_source provider: add an 'open_source' entry to config or "
@@ -372,6 +389,9 @@ def run_cmd(
         sample_seed=cfg.sampling.sample_seed,
         cost_budget_usd=budget,
         cost_usd_cap_per_rendering=cfg.agent.cost_usd_cap_per_rendering,
+        min_investigation_tool_calls=cfg.agent.min_investigation_tool_calls,
+        explicit_tool_use_scaffold=explicit_tool_use_prompt,
+        context_token_budget=context_window_tokens,
     )
     provider_temperatures = {
         name: cfg.providers[name].temperature
@@ -388,10 +408,22 @@ def run_cmd(
         for name in adapters
         if name in cfg.providers
     }
-    provider_budget_multipliers = {
-        name: cfg.providers[name].budget_multiplier
+    provider_reasoning_budgets = {
+        name: cfg.providers[name].reasoning_budget_tokens
         for name in adapters
         if name in cfg.providers
+        and cfg.providers[name].reasoning_budget_tokens is not None
+    }
+    provider_budget_multipliers = {
+        name: cfg.providers[name].effective_budget_multiplier
+        for name in adapters
+        if name in cfg.providers
+    }
+    provider_wall_clock_overrides = {
+        name: cfg.providers[name].wall_clock_override_seconds
+        for name in adapters
+        if name in cfg.providers
+        and cfg.providers[name].wall_clock_override_seconds is not None
     }
     provider_circuit_threshold = {
         name: cfg.providers[name].circuit_breaker_threshold
@@ -411,7 +443,9 @@ def run_cmd(
         provider_temperatures=provider_temperatures,
         provider_concurrency=provider_concurrency,
         provider_max_output_tokens=provider_max_output_tokens,
+        provider_reasoning_budgets=provider_reasoning_budgets,
         provider_budget_multipliers=provider_budget_multipliers,
+        provider_wall_clock_overrides=provider_wall_clock_overrides,
         provider_circuit_threshold=provider_circuit_threshold,
     )
     log.info(

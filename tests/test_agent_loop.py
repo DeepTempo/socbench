@@ -30,6 +30,7 @@ from socbench.providers.base import (
     Adapter,
     AdapterRequest,
     AdapterResponse,
+    AdapterToolCall,
     FatalAdapterError,
     TokenUsage,
 )
@@ -80,6 +81,56 @@ class _AlwaysFatalAdapter(Adapter):
     async def invoke(self, request: AdapterRequest) -> AdapterResponse:
         await asyncio.sleep(0.03)
         raise FatalAdapterError("simulated provider outage")
+
+
+class _RecordingGateAdapter(Adapter):
+    """Records each turn's offered tools + require_tool_call, then plays a script.
+
+    Used to prove the investigation gate: on a pre-investigation turn submit must
+    be withheld and require_tool_call set; once the tool-call quota is met the gate
+    releases. The script tries to SUBMIT on turn 0 (which the gate must block),
+    then makes a tool call, then submits.
+    """
+
+    provider_name = "open_source"
+
+    def __init__(self, model: str = "rec-1") -> None:
+        self.model = model
+        self.turns: list[dict] = []
+        self._i = 0
+
+    def reset(self) -> None:
+        self._i = 0
+
+    async def invoke(self, request: AdapterRequest) -> AdapterResponse:
+        names = {t.get("name") for t in request.tool_schemas}
+        self.turns.append(
+            {"submit_offered": "submit_assessment" in names,
+             "require_tool_call": request.require_tool_call}
+        )
+        i, self._i = self._i, self._i + 1
+        usage = TokenUsage(prompt_tokens=100, output_tokens=20)
+        if i == 0:
+            # Try to conclude immediately — the gate must reject this.
+            return AdapterResponse(
+                finish_reason="submit_assessment",
+                submit_assessment_args={"verdict": "benign", "confidence": 0.3,
+                                        "malicious_flow_indices": [], "rationale": "early"},
+                usage=usage, wall_time_ms=1,
+            )
+        if i == 1:
+            return AdapterResponse(
+                finish_reason="tool_call",
+                tool_call=AdapterToolCall(id="c1", name="list_pairs", args={"limit": 3}),
+                usage=usage, wall_time_ms=1,
+            )
+        return AdapterResponse(
+            finish_reason="submit_assessment",
+            submit_assessment_args={"verdict": "benign", "confidence": 0.4,
+                                    "malicious_flow_indices": [], "rationale": "after tool"},
+            usage=usage, wall_time_ms=1,
+        )
+
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 CONFIG_PATH = REPO_ROOT / "config" / "benchmark_config.yaml"
@@ -179,6 +230,70 @@ def test_happy_path_tool_then_submit(
     assert len(result.predictions) == 2  # one per adapter turn
 
 
+def test_context_budget_guard_forces_submit(
+    cfg, registry, tool_context, prompt_parts, label_inference, pricing, output_contract, eval_units
+):
+    """When the served context window is nearly full, the loop force-submits
+    (cap_hit_reason='context_budget') instead of letting the next call overflow."""
+    # Turn 0: a tool call whose response reports a large prompt (transcript nearly
+    # fills the window). Turn 1: the context guard should fire and force a submit.
+    big_prompt = _CannedResponse(
+        finish_reason="tool_call",
+        tool_call=AdapterToolCall(id="c1", name="list_pairs", args={"limit": 3}),
+        prompt_tokens=30_000,
+    )
+    submit = _CannedResponse.submit(verdict="benign", confidence=0.5, rationale="ctx-forced")
+    adapter = MockAdapter.with_script("mock-test", [big_prompt, submit])
+    loop = AgentLoop(
+        config=AgentLoopConfig(
+            persona="soc_analyst",
+            persona_policy=cfg.agent.personas["soc_analyst"],  # max_turns=4, won't trip
+            ablation="main",
+            cost_usd_cap_per_rendering=0.50,
+            max_output_tokens=2048,
+            context_token_budget=32768,  # reserve 2048+0+1024=3072; 30000+3072 >= 32768
+        ),
+        adapter=adapter, tool_registry=registry, tool_context=tool_context,
+        prompt_parts=prompt_parts, label_inference=label_inference,
+        pricing=pricing, output_contract_schema=output_contract,
+    )
+    result = loop.run_sync(eval_units[0])
+    rr = result.rendering_result
+    assert rr.cap_hit is True
+    assert rr.cap_hit_reason == "context_budget"  # not "turns" — the guard fired first
+    assert rr.forced_final_answer is True
+    assert rr.tool_calls_used == 1  # turn 0 ran; guard fired on turn 1
+
+
+def test_context_budget_guard_off_by_default(
+    cfg, registry, tool_context, prompt_parts, label_inference, pricing, output_contract, eval_units
+):
+    """With no context_token_budget (hosted APIs), a huge prompt never force-submits."""
+    big = _CannedResponse(
+        finish_reason="tool_call",
+        tool_call=AdapterToolCall(id="c1", name="list_pairs", args={"limit": 3}),
+        prompt_tokens=10_000_000,
+    )
+    submit = _CannedResponse.submit(verdict="benign", confidence=0.5, rationale="ok")
+    adapter = MockAdapter.with_script("mock-test", [big, submit])
+    loop = AgentLoop(
+        config=AgentLoopConfig(
+            persona="soc_analyst",
+            persona_policy=cfg.agent.personas["soc_analyst"],
+            ablation="main",
+            cost_usd_cap_per_rendering=0.50,
+            context_token_budget=None,  # off
+        ),
+        adapter=adapter, tool_registry=registry, tool_context=tool_context,
+        prompt_parts=prompt_parts, label_inference=label_inference,
+        pricing=pricing, output_contract_schema=output_contract,
+    )
+    result = loop.run_sync(eval_units[0])
+    # The model submitted voluntarily on turn 1; no context-driven force.
+    assert result.rendering_result.cap_hit_reason != "context_budget"
+    assert result.rendering_result.final_valid is True
+
+
 def test_force_final_on_turn_cap(
     cfg, registry, tool_context, prompt_parts, label_inference, pricing, output_contract, eval_units
 ):
@@ -209,6 +324,66 @@ def test_force_final_on_turn_cap(
     assert rr.forced_final_answer is True
     # final_valid is False under a forced submission
     assert rr.final_valid is False
+
+
+def test_investigation_gate_blocks_premature_submit(
+    cfg, registry, tool_context, prompt_parts, label_inference, pricing, output_contract, eval_units
+):
+    """min_investigation_tool_calls=1 must withhold submit + force a tool call on
+    turn 0, block a premature submission, and release the gate after one tool call."""
+    adapter = _RecordingGateAdapter()
+    loop = AgentLoop(
+        config=AgentLoopConfig(
+            persona="soc_analyst",
+            persona_policy=cfg.agent.personas["soc_analyst"],
+            ablation="main",
+            cost_usd_cap_per_rendering=0.50,
+            min_investigation_tool_calls=1,
+        ),
+        adapter=adapter,
+        tool_registry=registry,
+        tool_context=tool_context,
+        prompt_parts=prompt_parts,
+        label_inference=label_inference,
+        pricing=pricing,
+        output_contract_schema=output_contract,
+    )
+    result = loop.run_sync(eval_units[0])
+    rr = result.rendering_result
+
+    # Turn 0: gate active — submit withheld, tool call forced.
+    assert adapter.turns[0] == {"submit_offered": False, "require_tool_call": True}
+    # The turn-0 submission was blocked, so the rendering did NOT terminate there;
+    # the model had to call a tool (turn 1) before its submit was accepted (turn 2).
+    assert rr.tool_calls_used == 1
+    assert result.tool_calls[0].tool_name == "list_pairs"
+    # Turn 2: quota met — gate released, submit offered again, not forced.
+    assert adapter.turns[2] == {"submit_offered": True, "require_tool_call": False}
+    assert rr.final_valid is True
+    assert result.submit_args is not None
+
+
+def test_investigation_gate_off_allows_turn0_submit(
+    cfg, registry, tool_context, prompt_parts, label_inference, pricing, output_contract, eval_units
+):
+    """With the gate off (default 0), a turn-0 submission terminates immediately."""
+    adapter = _RecordingGateAdapter()
+    loop = AgentLoop(
+        config=AgentLoopConfig(
+            persona="soc_analyst",
+            persona_policy=cfg.agent.personas["soc_analyst"],
+            ablation="main",
+            cost_usd_cap_per_rendering=0.50,
+            min_investigation_tool_calls=0,
+        ),
+        adapter=adapter, tool_registry=registry, tool_context=tool_context,
+        prompt_parts=prompt_parts, label_inference=label_inference,
+        pricing=pricing, output_contract_schema=output_contract,
+    )
+    result = loop.run_sync(eval_units[0])
+    assert adapter.turns[0] == {"submit_offered": True, "require_tool_call": False}
+    assert result.rendering_result.turns_used == 1  # submitted on turn 0
+    assert result.rendering_result.tool_calls_used == 0
 
 
 def test_force_final_on_cost_cap(

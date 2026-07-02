@@ -49,6 +49,22 @@ SYSTEM_SCAFFOLD = (
     "the moment that tool returns."
 )
 
+# Opt-in variant for models that narrate/simulate tool use instead of calling
+# tools. Selected per run via ``--explicit-tool-use-prompt``; default OFF so
+# capable models run on the neutral scaffold above (the one the leaderboard
+# used) and the comparison stays fair.
+SYSTEM_SCAFFOLD_EXPLICIT = (
+    "You are a security agent investigating network traffic captured from a "
+    "corporate network. You have read-only access to a pre-built corpus index "
+    "via a small set of tools. Investigate by actually invoking the tools — do "
+    "not describe, simulate, or assume tool calls or their results in prose; "
+    "only a real tool call returns real data. Base your verdict solely on "
+    "evidence returned by tool calls you actually made, and cite only the "
+    "flow_ids and destinations that appeared in those tool responses. When you "
+    "have gathered enough evidence, commit your final verdict by calling "
+    "`submit_assessment`. The agent loop ends the moment that tool returns."
+)
+
 
 # ---------------------------------------------------------------------------
 # Forbidden-token check
@@ -180,6 +196,7 @@ def compose(
     output_contract_schema: dict[str, Any],
     tool_schemas: list[dict[str, Any]],
     label_inference: LabelInference,
+    explicit_tool_use: bool = False,
 ) -> str:
     """Assemble the system prompt for one ``(persona, ablation)``.
 
@@ -206,8 +223,9 @@ def compose(
     output_contract_block = json.dumps(output_contract_schema, indent=2, sort_keys=True)
     tool_schemas_block = json.dumps(tool_schemas, indent=2, sort_keys=True)
 
+    scaffold = SYSTEM_SCAFFOLD_EXPLICIT if explicit_tool_use else SYSTEM_SCAFFOLD
     sections: list[str] = [
-        f"# System\n{SYSTEM_SCAFFOLD}",
+        f"# System\n{scaffold}",
         f"# Output Contract\n```json\n{output_contract_block}\n```",
         f"# Persona\n{parts.personas[persona]}",
         f"# Common Playbook\n{parts.playbook_common}",
@@ -242,6 +260,7 @@ def prompts_manifest_sha(parts: PromptParts) -> str:
     return hash_obj(
         {
             "system_scaffold": SYSTEM_SCAFFOLD,
+            "system_scaffold_explicit": SYSTEM_SCAFFOLD_EXPLICIT,
             "playbook_common": parts.playbook_common,
             "personas": dict(sorted(parts.personas.items())),
         }
@@ -263,6 +282,7 @@ def playbooks_manifest_sha(parts: PromptParts, *, ablation: Ablation = "main") -
 
 __all__ = [
     "SYSTEM_SCAFFOLD",
+    "SYSTEM_SCAFFOLD_EXPLICIT",
     "Ablation",
     "ForbiddenTokenInPrompt",
     "PromptParts",

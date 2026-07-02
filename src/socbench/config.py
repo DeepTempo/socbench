@@ -78,6 +78,9 @@ PersonaBudget = PersonaPolicy
 
 class AgentConfig(_Strict):
     cost_usd_cap_per_rendering: Annotated[float, Field(gt=0)] = 0.50
+    # Withhold submit_assessment until this many investigative tool calls have been
+    # made, identically for every provider. 0 = off (may submit on turn 0).
+    min_investigation_tool_calls: Annotated[int, Field(ge=0)] = 0
     personas: dict[PersonaName, PersonaPolicy]
 
     @model_validator(mode="after")
@@ -106,10 +109,22 @@ class SamplingConfig(_Strict):
     full: SamplingModeConfig
 
 
+# Loop-budget bump for reasoning models, keyed to the model property (not provider)
+# so every reasoning model gets it. 1.5 was tuned for OpenAI (~7 turns vs ~5).
+REASONING_BUDGET_MULTIPLIER = 1.5
+
+
 class ProviderConfig(_Strict):
     enabled: bool = False
     model: str
     max_output_tokens: Annotated[int, Field(ge=1)] = 2048
+    # Separate thinking budget (tokens) for self-hosted reasoning models served
+    # behind vLLM. With it, ``max_output_tokens`` means the same thing it does for
+    # Gemini/Anthropic — the VISIBLE output budget — and reasoning gets its own
+    # ``thinking_token_budget`` so the chain of thought can't starve the tool call
+    # (the all-zero failure mode). None → no separate budget; only the open_source
+    # adapter consumes it (hosted APIs split reasoning from output server-side).
+    reasoning_budget_tokens: Annotated[int, Field(ge=1)] | None = None
     timeout_seconds: Annotated[int, Field(ge=1)] = 60
     max_retries: Annotated[int, Field(ge=0)] = 3
     max_concurrency: Annotated[int, Field(ge=1)] = 2
@@ -118,6 +133,12 @@ class ProviderConfig(_Strict):
     # that take more tool-calling turns to reach a verdict (e.g. OpenAI on large
     # host_egress units) need >1.0 so they aren't forced into invalid submissions.
     budget_multiplier: Annotated[float, Field(ge=1.0)] = 1.0
+    # Grants REASONING_BUDGET_MULTIPLIER turns/tool-calls (see that constant).
+    reasoning_model: bool = False
+    # Overrides ONLY the wall-clock cap for this provider (turns/tool-calls/cost
+    # unchanged), so a slow self-hosted model gets more TIME, not more TURNS, than
+    # the hosted APIs. None → persona policy unchanged. Applied after budget_multiplier.
+    wall_clock_override_seconds: Annotated[int, Field(ge=1)] | None = None
     # After this many *consecutive* fatal renderings, the Runner stops
     # submitting new work for this provider (a hard-down / quota-exhausted
     # provider shouldn't burn the whole wall-clock). 0 disables the breaker.
@@ -126,6 +147,12 @@ class ProviderConfig(_Strict):
     # pinned frontier reasoning models reject it; set a value only for models
     # that still accept one.
     temperature: Annotated[float, Field(ge=0.0, le=2.0)] | None = None
+
+    @property
+    def effective_budget_multiplier(self) -> float:
+        """Explicit ``budget_multiplier`` or the reasoning bump, whichever is larger."""
+        base = REASONING_BUDGET_MULTIPLIER if self.reasoning_model else 1.0
+        return max(self.budget_multiplier, base)
 
 
 class DatasetEntry(_Strict):

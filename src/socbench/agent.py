@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
 import socket
 import time
 from dataclasses import dataclass
@@ -86,6 +87,20 @@ _FORCE_FINAL_MESSAGE = (
     "Budget reached. Submit your best assessment now by calling "
     "`submit_assessment`. No further tool calls will be processed."
 )
+
+
+# Injected when the investigation gate is active and the model tried to conclude
+# without first calling a tool — steer it to investigate before it may submit.
+_INVESTIGATE_FIRST_MESSAGE = (
+    "Investigate before concluding: call one of the analysis tools to gather "
+    "evidence first. `submit_assessment` is unavailable until you have."
+)
+
+# Headroom (tokens) kept free below the served context window when deciding to
+# force-submit: covers the next turn's generation (output + reasoning, added by the
+# caller) plus one more tool result and prompt overhead not yet reflected in the
+# last observed prompt-token count.
+_CONTEXT_SAFETY_MARGIN_TOKENS = 1024
 
 
 # ---------------------------------------------------------------------------
@@ -196,8 +211,22 @@ class AgentLoopConfig:
     cost_usd_cap_per_rendering: float
     max_retries: int = 3
     max_output_tokens: int = 2048
+    # Separate thinking budget (tokens) for self-hosted reasoning models; None →
+    # not a reasoning model / hosted API that splits reasoning server-side.
+    reasoning_budget_tokens: int | None = None
     tool_max_results_cap: int = 200
     temperature: float | None = None  # None → omit from the provider call
+    # Withhold submit_assessment + force a tool call until this many investigative
+    # tool calls have been made. 0 = off. Universal across providers.
+    min_investigation_tool_calls: int = 0
+    # Use the explicit "actually call tools, don't narrate" scaffold (sec8 shim).
+    # Default off → neutral scaffold for capable models.
+    explicit_tool_use_scaffold: bool = False
+    # Served context window (max_model_len) for self-hosted models. When set, the
+    # loop force-submits before the transcript overflows it, instead of letting the
+    # server 400 → adapter_fatal (a lost rendering). None = off — hosted APIs have a
+    # huge native window and never need it. See _check_cap.
+    context_token_budget: int | None = None
 
 
 @dataclass
@@ -268,11 +297,16 @@ class AgentLoop:
         cap_hit = False
         cap_hit_reason: str | None = None
         adapter_fatal = False
+        # Input-token count the server reported for the LAST call — the live proxy
+        # for how full the context window is (drives the context-budget guard).
+        last_input_tokens = 0
 
         while True:
             # Cap check at TOP of each turn (the next call would push us over).
             wall_ms = int((time.monotonic() - rendering_start) * 1000)
-            cap_reason = self._check_cap(turns_used, tool_calls_used, wall_ms, cost_accum)
+            cap_reason = self._check_cap(
+                turns_used, tool_calls_used, wall_ms, cost_accum, last_input_tokens
+            )
             force = cap_reason is not None
 
             if force:
@@ -282,15 +316,30 @@ class AgentLoop:
                 # Append the budget-reached message so the model sees why.
                 messages.append(Message(role="user", content=_FORCE_FINAL_MESSAGE))
 
+            # Investigation gate: withhold submit + force a tool call until enough
+            # investigative calls are made. Never on a forced turn (the cap path
+            # needs to elicit the submit).
+            require_investigation = (
+                not force
+                and tool_calls_used < self.cfg.min_investigation_tool_calls
+            )
+            turn_tool_schemas = (
+                [t for t in tool_schemas if t.get("name") != "submit_assessment"]
+                if require_investigation
+                else list(tool_schemas)
+            )
+
             request = AdapterRequest(
                 system_prompt=system_prompt,
                 messages=list(messages),
-                tool_schemas=list(tool_schemas),
+                tool_schemas=turn_tool_schemas,
                 output_contract_schema=self.output_contract_schema,
                 output_contract_tool_name="submit_assessment",
                 max_output_tokens=self.cfg.max_output_tokens,
+                reasoning_budget_tokens=self.cfg.reasoning_budget_tokens,
                 temperature=self.cfg.temperature,
                 force_final_answer=force,
+                require_tool_call=require_investigation,
             )
 
             try:
@@ -320,6 +369,9 @@ class AgentLoop:
 
             cost_call = self._cost_of(response)
             cost_accum += cost_call
+            # Total input tokens the server saw this call (prompt + cached) — the
+            # context-window occupancy the guard checks before the next turn.
+            last_input_tokens = response.usage.prompt_tokens + response.usage.cached_tokens
             tool_name = (
                 response.tool_call.name if response.tool_call else (
                     "submit_assessment" if response.submit_assessment_args else None
@@ -345,20 +397,38 @@ class AgentLoop:
 
             # --- terminal: submit_assessment ---
             if response.submit_assessment_args is not None:
+                if require_investigation:
+                    # Submit leaked past the gate (e.g. content-fallback). Don't
+                    # terminate: nudge and continue; the spent turn keeps caps bounding.
+                    log.info(
+                        "investigation_gate_blocked_submit",
+                        extra={"rendering_id": rendering_id, "tool_calls_used": tool_calls_used},
+                    )
+                    messages.append(
+                        Message(role="assistant", content=response.text)
+                    )
+                    messages.append(
+                        Message(role="user", content=_INVESTIGATE_FIRST_MESSAGE)
+                    )
+                    continue
                 submit_args, final_valid = self._validate_submit(
                     response.submit_assessment_args
                 )
                 break
 
-            # --- terminal: forced but model returned no submission ---
-            if force and response.tool_call is not None:
-                # The model defied the force-final instruction; we honor the
-                # budget cap and mark invalid. Reflected as final_valid=False.
+            # --- terminal: forced turn produced no structured submission ---
+            # On a forced turn, anything that isn't a submit ends the rendering as
+            # invalid. Must break, not continue: `force` stays True, so falling
+            # through would re-force every turn until the context overflows (a hang).
+            if force:
                 log.warning(
-                    "force_final_ignored_by_model",
+                    "force_final_no_submission",
                     extra={
                         "rendering_id": rendering_id,
-                        "tool_call": response.tool_call.name,
+                        "had_tool_call": response.tool_call is not None,
+                        "tool_call": (
+                            response.tool_call.name if response.tool_call else None
+                        ),
                     },
                 )
                 break
@@ -368,7 +438,15 @@ class AgentLoop:
                 # Neither tool_call nor submit_assessment. Treat as
                 # informational text (rare with structured-output providers);
                 # let the loop continue and rely on caps to terminate.
-                messages.append(Message(role="assistant", content=response.text))
+                # On a `length` finish the text is a TRUNCATED reasoning blob
+                # (up to the full output budget) — appending it verbatim bloats
+                # the next call's input, accelerating context overflow on servers
+                # without reasoning separation (e.g. Ollama). Keep only a short
+                # breadcrumb so the turn is still diagnosable.
+                carry = response.text
+                if response.finish_reason == "length" and len(carry) > 200:
+                    carry = carry[:200]
+                messages.append(Message(role="assistant", content=carry))
                 continue
 
             call = response.tool_call
@@ -443,6 +521,7 @@ class AgentLoop:
             output_contract_schema=self.output_contract_schema,
             tool_schemas=self._persona_tool_schemas(ablation),
             label_inference=self.label_inference,
+            explicit_tool_use=self.cfg.explicit_tool_use_scaffold,
         )
 
     def _persona_tool_schemas(self, ablation: Ablation) -> list[dict[str, Any]]:
@@ -485,6 +564,7 @@ class AgentLoop:
         tool_calls_used: int,
         wall_ms: int,
         cost_accum: float,
+        last_input_tokens: int = 0,
     ) -> str | None:
         if turns_used >= self.cfg.persona_policy.max_turns:
             return "turns"
@@ -494,6 +574,20 @@ class AgentLoop:
             return "wall_clock"
         if cost_accum >= self.cfg.cost_usd_cap_per_rendering:
             return "cost"
+        # Context-window guard (self-hosted only): once the transcript the server
+        # last processed leaves no room for another full generation, force the
+        # submit now rather than let the next call overflow max_model_len → 400 →
+        # adapter_fatal. Only after ≥1 turn (turn 0's prompt is tiny) and only when
+        # usage was reported (open servers may omit it → last_input_tokens stays 0).
+        budget = self.cfg.context_token_budget
+        if budget is not None and last_input_tokens > 0:
+            reserve = (
+                self.cfg.max_output_tokens
+                + (self.cfg.reasoning_budget_tokens or 0)
+                + _CONTEXT_SAFETY_MARGIN_TOKENS
+            )
+            if last_input_tokens + reserve >= budget:
+                return "context_budget"
         return None
 
     async def _dispatch_tool(
@@ -645,6 +739,14 @@ class RunConfig:
     sample_seed: int
     cost_budget_usd: float
     cost_usd_cap_per_rendering: float
+    # Withhold submit_assessment until this many investigative tool calls have been
+    # made (universal across providers). 0 = off. See AgentConfig docstring.
+    min_investigation_tool_calls: int = 0
+    # Opt into the explicit anti-narration scaffold (sec8 shim). Default off.
+    explicit_tool_use_scaffold: bool = False
+    # Served context window (max_model_len) for self-hosted runs → force-submit
+    # before overflow. None = off (hosted APIs). See AgentLoopConfig.
+    context_token_budget: int | None = None
 
 
 @dataclass
@@ -708,7 +810,9 @@ class Runner:
         provider_temperatures: dict[str, float | None] | None = None,
         provider_concurrency: dict[str, int] | None = None,
         provider_max_output_tokens: dict[str, int] | None = None,
+        provider_reasoning_budgets: dict[str, int] | None = None,
         provider_budget_multipliers: dict[str, float] | None = None,
+        provider_wall_clock_overrides: dict[str, int] | None = None,
         provider_circuit_threshold: dict[str, int] | None = None,
     ) -> None:
         if not adapters:
@@ -730,20 +834,82 @@ class Runner:
         # which keeps stateful adapters (e.g. the mock) correct by default.
         self.provider_concurrency = provider_concurrency or {}
         self.provider_max_output_tokens = provider_max_output_tokens or {}
+        # Per-provider thinking budget (tokens) for self-hosted reasoning models.
+        # Missing → None (no separate reasoning budget). Only the open_source
+        # adapter acts on it; hosted APIs split reasoning from output server-side.
+        self.provider_reasoning_budgets = provider_reasoning_budgets or {}
         # Per-provider loop-budget scaling (max_turns / max_tool_calls /
         # wall_clock_seconds / cost cap). Missing → 1.0 (use persona policy as-is).
         self.provider_budget_multipliers = provider_budget_multipliers or {}
+        # Per-provider wall-clock OVERRIDE (seconds). Replaces the persona policy's
+        # wall_clock_seconds for that provider only, leaving max_turns/max_tool_calls/
+        # cost identical so the provider runs under the same LOGICAL budget as every
+        # other one (isolates the model, not its inference speed). Missing → no
+        # override. Applied AFTER budget_multiplier.
+        self.provider_wall_clock_overrides = provider_wall_clock_overrides or {}
         # Per-provider circuit breaker: after this many *consecutive* fatal
         # renderings, stop submitting new work for that provider (a hard-down
         # or quota-exhausted provider shouldn't burn the whole wall-clock).
         # 0/missing → disabled.
         self.provider_circuit_threshold = provider_circuit_threshold or {}
 
+    def _preflight(self) -> None:
+        """Validate every adapter + pricing before any artifacts are written.
+
+        Runs each adapter's :meth:`Adapter.preflight` health check and a
+        pricing-coverage check. A fatal adapter misconfiguration (unreachable
+        endpoint, rejected auth) propagates as :class:`FatalAdapterError` and
+        aborts the run *before* the run directory is created — failing loudly
+        instead of producing an all-zero run. Soft issues are logged as
+        warnings and do not stop the run:
+
+        - ``adapter.preflight()`` warnings (e.g. the configured model is not
+          among the endpoint's served models), and
+        - a model with no entry in ``pricing.yaml`` — it scores fine but its
+          ``cost_usd`` is silently zeroed (see :meth:`AgentLoop._cost_of`),
+          corrupting the benchmark's cost dimension.
+
+        Set ``SOCBENCH_SKIP_PREFLIGHT=1`` to bypass entirely (offline dry runs,
+        or an endpoint that doesn't implement ``/models``).
+        """
+        if os.environ.get("SOCBENCH_SKIP_PREFLIGHT", "").strip().lower() in {
+            "1",
+            "true",
+            "yes",
+        }:
+            log.warning("preflight_skipped", extra={"reason": "SOCBENCH_SKIP_PREFLIGHT"})
+            return
+        for provider_name, adapter in self.adapters.items():
+            for warning in adapter.preflight():
+                log.warning(
+                    "preflight_warning",
+                    extra={"provider": provider_name, "warning": warning},
+                )
+            # The mock provider is intentionally unpriced — skip its cost check.
+            if provider_name == "mock":
+                continue
+            try:
+                self.pricing.rate(provider_name, adapter.model)
+            except KeyError:
+                log.warning(
+                    "preflight_unpriced_model",
+                    extra={
+                        "provider": provider_name,
+                        "model": adapter.model,
+                        "note": "cost_usd will be silently 0; add it to pricing.yaml",
+                    },
+                )
+
     def run_sync(self, units: list[EvalUnit]) -> RunOutcome:
         """Blocking wrapper around :meth:`run` for the CLI and tests."""
         return asyncio.run(self.run(units))
 
     async def run(self, units: list[EvalUnit]) -> RunOutcome:
+        # Fail loudly on a misconfigured deployment before writing any
+        # artifacts: a fatal check aborts here rather than after a full
+        # all-zero run. Soft issues are logged. Bypass: SOCBENCH_SKIP_PREFLIGHT.
+        self._preflight()
+
         paths = prepare_run_artifacts(self.cfg.runs_root, self.cfg.run_id)
         started_at = datetime.now(UTC).isoformat()
 
@@ -1030,16 +1196,31 @@ class Runner:
                 }
             )
             cost_cap *= multiplier
+        # Per-provider wall-clock override: relax ONLY the time bound (not turns/
+        # tool_calls/cost) so a slow self-hosted model runs under the same logical
+        # budget as the hosted APIs instead of being force-cut mid-investigation.
+        # Applied last so it is authoritative over any budget_multiplier scaling.
+        wall_clock_override = self.provider_wall_clock_overrides.get(provider_name)
+        if wall_clock_override is not None:
+            persona_policy = persona_policy.model_copy(
+                update={"wall_clock_seconds": wall_clock_override}
+            )
         loop_config_kwargs: dict[str, Any] = dict(
             persona=persona,
             persona_policy=persona_policy,
             ablation=self.cfg.ablation,
             cost_usd_cap_per_rendering=cost_cap,
             temperature=self.provider_temperatures.get(provider_name),
+            min_investigation_tool_calls=self.cfg.min_investigation_tool_calls,
+            explicit_tool_use_scaffold=self.cfg.explicit_tool_use_scaffold,
+            context_token_budget=self.cfg.context_token_budget,
         )
         max_out = self.provider_max_output_tokens.get(provider_name)
         if max_out is not None:
             loop_config_kwargs["max_output_tokens"] = max_out
+        reasoning_budget = self.provider_reasoning_budgets.get(provider_name)
+        if reasoning_budget is not None:
+            loop_config_kwargs["reasoning_budget_tokens"] = reasoning_budget
         loop = AgentLoop(
             config=AgentLoopConfig(**loop_config_kwargs),
             adapter=adapter,

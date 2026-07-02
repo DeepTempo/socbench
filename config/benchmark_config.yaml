@@ -43,6 +43,11 @@ index:
 # in run metadata, so the eval-set fingerprint moves with the policy.
 agent:
   cost_usd_cap_per_rendering: 0.50
+  # Withhold submit_assessment + force a tool call until this many investigative
+  # tool calls are made, identically for every provider. 0 = off (main, comparable
+  # to the published leaderboard). Set to 1 only for the gated "forced-investigation"
+  # ablation — it gates every provider and is NOT leaderboard-comparable.
+  min_investigation_tool_calls: 0
   personas:
     soc_analyst:
       max_turns: 4
@@ -125,8 +130,10 @@ providers:
     max_concurrency: 6
     # OpenAI reasoning models are chattier (~7 turns vs ~5 for peers) and slower,
     # so they exhaust persona turn/wall/cost budgets on large host_egress units and
-    # get forced into invalid submissions. Scale the loop budget 1.5x to compensate.
-    budget_multiplier: 1.5
+    # get forced into invalid submissions. The 1.5x bump is now expressed via the
+    # reasoning_model flag (REASONING_BUDGET_MULTIPLIER), shared with every other
+    # reasoning model so the loop budget is keyed to the model property, not provider.
+    reasoning_model: true
   anthropic:
     enabled: false
     model: claude-opus-4-7
@@ -151,13 +158,58 @@ providers:
   open_source:
     enabled: false
     model: fdtn-ai/Foundation-Sec-8B-Reasoning
+    # max_output_tokens is the VISIBLE (post-reasoning) output budget — identical
+    # semantics to Gemini/Anthropic, so the providers are compared apples-to-apples.
+    # Reasoning gets its OWN budget below; it does not eat this one.
     max_output_tokens: 2048
-    timeout_seconds: 300
+    # Separate thinking budget for reasoning models (QwQ, Foundation-Sec-Reasoning),
+    # which emit a long chain of thought BEFORE the tool call. The adapter sends
+    # vLLM thinking_token_budget=reasoning_budget_tokens and widens the total
+    # max_tokens to max_output_tokens + reasoning_budget_tokens, mirroring how the
+    # hosted APIs separate thinking from output server-side. REQUIRES the vLLM
+    # server to run with --reasoning-parser (minimax_m2 for Llama-3.1 backbones,
+    # deepseek_r1 for QwQ/Qwen-2.5) or the CoT lands in content and scores zero.
+    #
+    # Value chosen to MATCH the hosted reasoning effort so the comparison is fair:
+    #   - Gemini 2.5 Pro: default thinking budget is 8192 tokens; with dynamic
+    #     thinking the max thinking is also capped at 8192. This is the closest
+    #     analogue since Gemini separates thinking from output exactly like we do.
+    #   - OpenAI gpt-5.x medium effort (the default): ~1k-4k reasoning tokens on
+    #     hard prompts; the documented headroom rule is "visible budget + 5000".
+    #   - Anthropic (claude-opus-4-7): extended thinking is not enabled here, so it
+    #     runs in standard mode (0 reasoning) — the floor of the comparison.
+    # 8192 sits at the Gemini default and above OpenAI's medium effort, giving the
+    # open models the SAME thinking allowance a hosted reasoning model gets by
+    # default. Keep max_output_tokens + reasoning_budget_tokens + prompt within the
+    # server's --max-model-len (use >=32768 for reasoning models).
+    reasoning_budget_tokens: 8192
+    # Per-request deadline. The open_source adapter reads its HTTP timeout from
+    # the OPEN_SOURCE_TIMEOUT_SECONDS env var (set by the deploy entrypoint),
+    # NOT from this field — kept here as documentation of the intended budget.
+    timeout_seconds: 600
     max_retries: 2
-    # Raised from 8 to saturate the vLLM decode batch on multi-GPU (TP) serving;
-    # 8 left most GPU throughput idle and made full runs take tens of hours.
-    max_concurrency: 32
+    # Concurrency drives decode contention. At 64 concurrent requests a slow
+    # reasoning model decoded at ~0.08 tok/s/req — every request blew past the
+    # HTTP deadline and was marked adapter_fatal. 8 keeps the decode batch busy
+    # while leaving each request enough throughput to finish a turn in time.
+    max_concurrency: 8
     temperature: null
+    # The pinned open models (Seneca/QwQ, Foundation-Sec-Reasoning) ARE reasoning
+    # models, so they get the SAME loop-budget bump (REASONING_BUDGET_MULTIPLIER)
+    # as the hosted reasoning models — keyed to the model property, not provider
+    # identity. This is the fair comparison: previously OpenAI's reasoning models
+    # got 1.5x turns while the open reasoning models got 1.0x, so they hit the turn
+    # cap and were force-finalised more often (a coverage artifact, not a capability
+    # gap). Flag it OFF only when serving a NON-reasoning open model.
+    reasoning_model: true
+    # wall_clock_override_seconds relaxes ONLY the time bound (on top of the turn
+    # budget): self-hosted inference is slow, so a rendering should terminate on the
+    # turn/tool-call budget (as the fast APIs effectively do — they never reach their
+    # wall-clock) rather than be force-cut mid-investigation. This gives more TIME,
+    # not more turns. A high SAFETY backstop (30 min), not a routine cap: normal
+    # renderings finish in minutes; this only stops a genuinely wedged one. Per-turn
+    # generation is still bounded by OPEN_SOURCE_TIMEOUT_SECONDS (600s).
+    wall_clock_override_seconds: 1800
 
 # Default dataset entries. Each entry is a logical name → source parquet URI(s).
 # `sample` ships with the repo (≤ 10 MB) so smoke runs need no downloads.

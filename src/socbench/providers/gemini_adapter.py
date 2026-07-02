@@ -91,6 +91,12 @@ class GeminiAdapter(Adapter):
                     allowed_function_names=[request.output_contract_tool_name],
                 )
             )
+        elif request.require_tool_call and tool_decls:
+            # Investigation gate: submit is withheld from ``tool_decls`` upstream,
+            # so mode=ANY forces an investigative call this turn.
+            tool_config = types.ToolConfig(
+                function_calling_config=types.FunctionCallingConfig(mode="ANY")
+            )
 
         config_kwargs: dict[str, Any] = {
             "system_instruction": request.system_prompt,

@@ -93,6 +93,10 @@ class OpenAIAdapter(Adapter):
                     "type": "function",
                     "name": request.output_contract_tool_name,
                 }
+            elif request.require_tool_call:
+                # Investigation gate: submit is withheld from ``tools`` upstream,
+                # so requiring a tool call forces an investigative call this turn.
+                kwargs["tool_choice"] = "required"
 
         start = time.monotonic()
         try:

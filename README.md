@@ -25,8 +25,9 @@ Alpha — the full pipeline runs end-to-end. Build-out follows the steps in
   content-addressed indexes
 - **Step 3** — read-only tools layer with persona allowlist + sample builder
 - **Step 4** — personas, playbooks, prompt compose + forbidden-token check
-- **Step 5** — provider adapters (OpenAI / Anthropic / Gemini + always-on
-  mock) and the multi-turn agent loop with budget caps and cost/latency rollups
+- **Step 5** — provider adapters (OpenAI / Anthropic / Gemini / open-source
+  self-hosted + always-on mock) and the multi-turn agent loop with budget caps
+  and cost/latency rollups
 - **Step 6** — scoring (per-flow / per-pair / per-host F1), stratified
   sampling, ablation aggregation
 - **Step 7** — quickstart + results-explorer notebooks, `RESULTS.md` /
@@ -143,6 +144,111 @@ dataset so it needs no committed data) and plots per-persona F1.
 results by stratum, persona, and provider. Install with
 `pip install -e ".[notebooks]"`.
 
+## Running self-hosted / open-source models
+
+`open_source_adapter.py` speaks plain OpenAI Chat Completions over HTTP
+(`httpx`, no vendor SDK), so it works against **any** compatible server —
+vLLM, Ollama, TGI, llama.cpp — local or remote. This is what was used to
+benchmark self-hosted cybersecurity fine-tunes (e.g. Foundation-Sec-8B-Reasoning,
+Seneca-Cybersecurity-LLM-x-QwQ-32B) alongside the hosted providers.
+
+### Fastest path: point it at anything already running
+
+```bash
+export OPEN_SOURCE_BASE_URL=http://localhost:11434/v1   # Ollama's default
+export OPEN_SOURCE_MODEL=<served-model-id>               # or set providers.open_source.model in config
+socbench run --dataset-hash <dataset_hash> --providers open_source --personas all
+```
+
+No API key needed for a local server. For an authenticated remote endpoint
+(e.g. a Vertex AI custom job), set `OPEN_SOURCE_API_KEY` to a bearer token.
+
+### Adapter environment variables
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `OPEN_SOURCE_BASE_URL` | `http://localhost:11434/v1` | Inference server base URL |
+| `OPEN_SOURCE_MODEL` | — | Served model id; overrides `config/benchmark_config.yaml`'s `providers.open_source.model` (set by the deploy entrypoint to vLLM's `--served-model-name`) |
+| `OPEN_SOURCE_API_KEY` | — | Optional bearer token (e.g. a short-lived GCP access token for a Vertex endpoint) |
+| `OPEN_SOURCE_TIMEOUT_SECONDS` | `600` | Per-request read deadline. Self-hosted reasoning models under concurrent load take minutes per turn — raise this before assuming a model is broken |
+| `OPEN_SOURCE_DISABLE_THINKING_BUDGET` | off | Stop sending vLLM's `thinking_token_budget` sampling param (some reasoner families/runners 400 on it — the adapter self-heals once automatically, this is the persistent override) |
+| `OPEN_SOURCE_FLATTEN_TRANSCRIPT` | off | Collapse the multi-turn conversation into one role-labelled user message, for models whose chat template has no tool-role branch and mangles assistant history (e.g. Foundation-Sec-8B) |
+| `OPEN_SOURCE_DEBUG_DUMP` | — | Path to a JSONL file; when set, every turn's raw response + how it was parsed is appended, for diagnosing a near-zero run |
+
+Two CLI flags on `socbench run` are open-source-specific:
+
+- `--explicit-tool-use-prompt` — swaps in an anti-narration system scaffold
+  (`SYSTEM_SCAFFOLD_EXPLICIT` in `prompts.py`, documented in
+  `config/prompts/system_scaffold_explicit.txt`) for models that narrate tool
+  use in prose instead of calling tools. Off by default — capable models run
+  on the same neutral scaffold the hosted providers use, so the comparison
+  stays fair.
+- `--context-window-tokens <N>` — the served `--max-model-len`. When set, the
+  loop force-submits before the transcript would overflow it, instead of
+  letting the server 400 the request (which the adapter would otherwise count
+  as a lost, `adapter_fatal` rendering).
+
+### Full GPU deployment (Vertex AI Custom Jobs)
+
+`deploy/vertex/{launch.sh,entrypoint.sh,Dockerfile}` build and run a
+containerized job that starts vLLM, health-checks it, pulls the dataset,
+builds the index, runs `socbench run`, and uploads `runs/` to GCS —
+end-to-end, no manual steps between "have a model id" and "have a scored run".
+All knobs are environment variables so sibling launches stay consistent;
+`launch.sh`'s header comment has full worked examples per model shape. The
+essentials:
+
+```bash
+PROJECT=<gcp-project> TAG=<built-image-tag> \
+MODEL=fdtn-ai/Foundation-Sec-8B-Reasoning \
+FLATTEN_TRANSCRIPT=1 DISABLE_THINKING_BUDGET=1 \
+OUTPUT_BUCKET=gs://<your-bucket>/os-benchmark/sec8 \
+DISPLAY_NAME=sec8-full bash deploy/vertex/launch.sh
+```
+
+```bash
+# A GGUF-only release (Seneca-x-QwQ-32B): dequantize to fp16 once and serve
+# unquantized (vLLM's native path decodes 2-3x faster than its GGUF path).
+PROJECT=<gcp-project> TAG=<built-image-tag> \
+MODEL=AlicanKiraz0/Seneca-Cybersecurity-LLM-x-QwQ-32B-Q4_Medium-Version \
+GGUF_FILENAME=senecallm-x-qwq-32b-q4_k_m.gguf TOKENIZER=Qwen/QwQ-32B \
+DEQUANTIZE_GGUF=1 REASONING_PARSER=deepseek_r1 MAX_MODEL_LEN=16384 \
+OUTPUT_BUCKET=gs://<your-bucket>/os-benchmark/seneca \
+DISPLAY_NAME=seneca-full bash deploy/vertex/launch.sh
+```
+
+Key knobs beyond `MODEL`/`OUTPUT_BUCKET`/`DISPLAY_NAME`:
+
+| Env var | Purpose |
+|---|---|
+| `MACHINE` / `ACCEL_TYPE` / `ACCEL_COUNT` / `TENSOR_PARALLEL` | GPU shape. Default `g2-standard-48` / `NVIDIA_L4` / 4 — see GPU notes below |
+| `GGUF_FILENAME` / `TOKENIZER` / `DEQUANTIZE_GGUF` | GGUF-only model releases |
+| `REASONING_PARSER` | vLLM `--reasoning-parser` (`deepseek_r1` for Qwen/QwQ-style `<think>` models; leave empty if no parser matches the model's CoT delimiter) |
+| `FLATTEN_TRANSCRIPT` / `DISABLE_THINKING_BUDGET` / `EXPLICIT_TOOL_USE_PROMPT` | Shims for models whose template/tokenizer can't drive a native agentic tool-calling loop |
+| `GPU_MEM_UTIL` | vLLM `--gpu-memory-utilization`. Lower to `0.80` on a 24GB L4 — the default (0.9) leaves too little free memory for the sampling warmup and OOMs at startup |
+| `STRATEGY=FLEX_START MAX_WAIT=<dur>` | Dynamic Workload Scheduler — queues the job until GPU capacity frees up instead of failing immediately on "resources insufficient" |
+| `LIMIT=<N>` | Run only the first N eval units — use for a cheap calibration slice before a full run |
+
+**GPU availability notes (adjust for your project/quota):** L4 is the most
+reliably available shape and works out of the box. A100 needs explicit quota.
+H100 (`a3-highgpu-1g`) may ship a CUDA driver too old for current vLLM to
+initialize — smoke-test with `LIMIT=10` before committing a full run to an
+unfamiliar accelerator type.
+
+### Diagnosing a near-zero run
+
+`scripts/eval_sec8.py` decomposes a completed run into a behavioral funnel —
+adapter-fatal rate, tool-invocation rate, voluntary-vs-forced submissions,
+defect breakdown, evidence-grounding rate — so a near-zero score can be
+attributed to a real capability limit vs. an infra/parsing problem before
+it's reported as either:
+
+```bash
+python scripts/eval_sec8.py runs/<run_id> --provider open_source --persona soc_analyst --examples 3
+# or machine-readable:
+python scripts/eval_sec8.py runs/<run_id> --provider open_source --json
+```
+
 ## Repository layout
 
 ```
@@ -182,6 +288,7 @@ socbench/
 │   │   ├── base.py               #   Adapter ABC + request/response models + factory
 │   │   ├── mock_adapter.py       #   deterministic, always-on, no SDK
 │   │   ├── openai_adapter.py / anthropic_adapter.py / gemini_adapter.py
+│   │   └── open_source_adapter.py #  any OpenAI-Chat-Completions-compatible server
 │   └── tools/                    # Step 3: read-only tool layer
 │       ├── base.py               #   Tool ABC + ToolContext + ToolRegistry
 │       ├── smoke.py              #   diagnostic runner

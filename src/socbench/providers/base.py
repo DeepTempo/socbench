@@ -103,11 +103,25 @@ class AdapterRequest(BaseModel):
     output_contract_schema: dict[str, Any]
     output_contract_tool_name: str = "submit_assessment"
     max_output_tokens: Annotated[int, Field(ge=1)] = 2048
+    # Separate thinking budget for self-hosted reasoning models, in tokens.
+    # ``max_output_tokens`` gates the VISIBLE (post-reasoning) output only —
+    # the same semantics Gemini/Anthropic enforce server-side. Adapters that
+    # serve reasoning models behind vLLM use this to set ``thinking_token_budget``
+    # and to widen ``max_tokens`` to ``max_output_tokens + reasoning_budget_tokens``
+    # so the chain of thought doesn't cannibalise the structured-output budget.
+    # None → no separate reasoning budget (non-reasoning models, or hosted APIs
+    # that already split reasoning from output for us).
+    reasoning_budget_tokens: Annotated[int, Field(ge=1)] | None = None
     # None → omit the sampling param entirely. Newer reasoning models
     # (e.g. Claude Opus 4.x) reject ``temperature``; only send it when a
     # provider is explicitly configured with one.
     temperature: Annotated[float, Field(ge=0.0, le=2.0)] | None = None
     force_final_answer: bool = False  # set when budget is exhausted
+    # Force SOME tool call this turn (provider tool_choice "required"/"any"). The
+    # investigation gate also withholds submit_assessment from ``tool_schemas``, so
+    # it can only resolve to an investigative tool. Mutually exclusive with
+    # ``force_final_answer``.
+    require_tool_call: bool = False
 
 
 class TokenUsage(BaseModel):
@@ -185,6 +199,24 @@ class Adapter(ABC):
         one instance can drive many renderings.
         """
         return None
+
+    def preflight(self) -> list[str]:
+        """Best-effort startup health check, run once before the Runner starts.
+
+        Network-backed adapters override this to fail fast on a misconfigured
+        deployment instead of letting every rendering fail and producing an
+        all-zero run (the failure mode this guards against).
+
+        Returns a list of human-readable WARNING strings — non-fatal issues the
+        operator should see but that don't doom the run (e.g. the configured
+        model is not among the endpoint's served models). Raises
+        :class:`FatalAdapterError` on a hard misconfiguration that would doom
+        the whole run (endpoint unreachable, authentication rejected).
+
+        The default is a no-op: adapters whose ``__init__`` already validates
+        everything checkable offline (API-key presence) have nothing to add.
+        """
+        return []
 
 
 def _now_ms() -> int:

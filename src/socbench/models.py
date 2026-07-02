@@ -18,7 +18,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 Verdict = Literal["benign", "malicious"]
 EvalUnitType = Literal["pair_timeline", "host_egress"]
 GoldLabel = Literal["benign", "malicious", "mixed"]
-CapHitReason = Literal["turns", "tool_calls", "wall_clock", "cost"]
+CapHitReason = Literal["turns", "tool_calls", "wall_clock", "cost", "context_budget"]
 RunMode = Literal["smoke", "full"]
 AblationTag = Literal["main", "tools_off", "playbooks_off", "single_shot_baseline"]
 
