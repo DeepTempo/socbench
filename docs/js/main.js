@@ -72,9 +72,10 @@
   function renderCostPerAlertBars() {
     const ctx = document.getElementById("cost-bars");
     if (!ctx) return;
+    const PERSONAS_PER_UNIT = 4;
     const rows = data.meanPerProvider.combined.map(r => ({
       provider: r.provider,
-      value: r.costUsd / SHARED_UNITS,   // $ / alert
+      value: r.costUsd / (SHARED_UNITS * PERSONAS_PER_UNIT),   // $ / alert (one persona per verdict)
     }));
     const maxV = Math.max(...rows.map(r => r.value));
     new Chart(ctx.getContext("2d"), {

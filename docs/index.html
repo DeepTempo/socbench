@@ -382,8 +382,8 @@
 
   <div class="chart-grid">
     <div class="chart-wrap chart-wrap--grid">
-      <div class="chart-title">Cost per alert</div>
-      <div class="chart-sub">Total spend ÷ 1,205 units. One verdict per unit.</div>
+      <div class="chart-title">Avg. cost per alert</div>
+      <div class="chart-sub">Total spend ÷ (1,205 units × 4 personas). One persona = one verdict = one alert.</div>
       <div class="chart-canvas chart-canvas--compact"><canvas id="cost-bars"></canvas></div>
     </div>
 
@@ -616,7 +616,7 @@
   <div class="eyebrow">Detection · Per-persona detail</div>
   <h2>F1, cost, and reliability per persona</h2>
   <p class="lead">All 12 (provider × persona) configurations plotted on the F1 / cost frontier, with the cross-provider winner on each dimension called out.</p>
-  <p class="lead">As an example, a large telco active in the Vigil community reports approximately 70 million such events per minute. There are 1,440 minutes in a day, so the cost of pushing all flow events into an LLM at $0.04 per event is extremely cost-prohibitive (70 million x 1,440 x $0.04 = ~$4bn per day).</p>
+  <p class="lead">At one million alerts a day, the cheapest LLM stack ($0.057 per alert) is roughly $60,000 of inference every day, before a single analyst looks at the output. At telco scale (a large telco active in the Vigil community reports approximately 70 million flow events per minute, which batches into roughly 2 billion alerts per day at 50 flows per alert), the LLM bill runs to hundreds of millions of dollars per day ($114M at the cheapest provider, ~$302M at the priciest).</p>
 
   <div class="chart-wrap">
     <div class="chart-title">F1 vs cost per alert, per persona</div>
