@@ -141,6 +141,17 @@ providers:
     timeout_seconds: 60
     max_retries: 3
     max_concurrency: 8
+  # Self-hosted / open-weight models served over an OpenAI-compatible endpoint
+  # (vLLM, TGI, Ollama, llama.cpp). Configure the endpoint via OPEN_SOURCE_* env
+  # vars (BASE_URL, API_KEY, TIMEOUT_SECONDS, REASONING_BUDGET_TOKENS).
+  open_source:
+    enabled: false
+    model: fdtn-ai/Foundation-Sec-8B-Reasoning
+    max_output_tokens: 2048
+    timeout_seconds: 600
+    max_retries: 2
+    max_concurrency: 8
+    budget_multiplier: 1.5
 
 # Default dataset entries. Each entry is a logical name → source parquet URI(s).
 # `sample` ships with the repo (≤ 10 MB) so smoke runs need no downloads.
