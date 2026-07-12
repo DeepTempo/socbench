@@ -21,7 +21,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 # ---------------------------------------------------------------------------
 
 PersonaName = Literal["soc_analyst", "threat_analyst", "adversary_hunter", "detection_engineer"]
-ProviderName = Literal["openai", "anthropic", "gemini"]
+ProviderName = Literal["openai", "anthropic", "gemini", "open_source"]
 LabelGroup = Literal["benign", "malicious"]
 
 
