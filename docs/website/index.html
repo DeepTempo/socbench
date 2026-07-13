@@ -271,6 +271,13 @@
       </div>
       <div class="cap-desc">IOC enrichment, threat-actor attribution, MITRE ATT&amp;CK mapping.</div>
     </div>
+    <div class="cap cap-vulnerability planned">
+      <div class="cap-head">
+        <div class="cap-title">Vulnerability detection and patching</div>
+        <span class="cap-badge">Roadmap</span>
+      </div>
+      <div class="cap-desc">Identify exploitable vulnerabilities across assets, prioritize by risk, and propose or apply patches.</div>
+    </div>
     <div class="cap cap-response exploring">
       <div class="cap-head">
         <div class="cap-title">Response &amp; remediation</div>
@@ -293,87 +300,143 @@
 <section id="detection">
   <div class="eyebrow">Capability · Live</div>
   <h2>Detection</h2>
+  <p class="lead">The Detection benchmark scores three lanes on 1,205 evaluation units:</p>
+  <ol class="lead-lanes">
+    <li><strong>Frontier LLMs.</strong> Claude Opus 4.7, GPT-5.4, Gemini 2.5 Pro.</li>
+    <li><strong>Open weights.</strong> Foundation-Sec-8B, Seneca-QwQ-32B, GLM 5.2.</li>
+    <li><strong>Foundation model for cybersecurity.</strong> LogLM, DeepTempo's encoder-only model.</li>
+  </ol>
   <p class="lead">
-    Each provider runs four analyst personas (<code>soc_analyst</code>,
-    <code>threat_analyst</code>, <code>adversary_hunter</code>,
-    <code>detection_engineer</code>) over the same evaluation units, calling
-    <a href="#persona-tools">network-flow tools</a> and submitting a per-unit verdict plus a list of flows
-    flagged malicious. We score every (provider × persona) pair on three F1
-    lenses (per-flow, per-pair, per-host), verdict accuracy, completion rate,
-    latency, and cost.
+    All LLMs run in the same <strong>detection harness</strong>: four analyst personas with <a href="#persona-tools">network-flow tools</a> submitting per-unit verdicts.
+    LogLM scores sequences directly, projected onto the eval-unit class prior.
   </p>
 
-  <div class="cards">
-    <div class="card card--slim anthropic">
-      <div class="card-head">
-        <div class="card-head-text">
-          <div class="card-provider">anthropic</div>
-          <div class="card-model">claude-opus-4-7</div>
-        </div>
-        <span class="card-pill card-pill--efficacy">
-          <svg viewBox="0 0 16 16" width="11" height="11" fill="currentColor" aria-hidden="true"><path d="M8 0l2 6h6l-5 3.5L13 16 8 12 3 16l2-6.5L0 6h6z"/></svg>
-          Best efficacy
-        </span>
-      </div>
-      <div class="card-stats-dual">
-        <div class="card-stat-cell">
-          <span class="card-stat-num">0.93</span>
-          <div class="card-stat-label">verdict F1</div>
-        </div>
-        <div class="card-stat-cell">
-          <span class="card-stat-num">0.65</span>
-          <div class="card-stat-label">per-flow F1</div>
-        </div>
-      </div>
-      <div class="card-stat-meta">best persona: <code>soc_analyst</code></div>
+  <div class="leaderboard">
+    <div class="lb-row lb-row--head">
+      <div>System</div>
+      <div>Lane</div>
+      <div>Verdict F1</div>
+      <div>Per-flow F1</div>
+      <div>Note</div>
     </div>
 
-    <div class="card card--slim gemini">
-      <div class="card-head">
-        <div class="card-head-text">
-          <div class="card-provider">gemini</div>
-          <div class="card-model">gemini-2.5-pro</div>
-        </div>
-        <span class="card-pill card-pill--balanced">
-          <svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 1v14M3 4l5 3 5-3M3 12l5-3 5 3"/></svg>
-          Most balanced
-        </span>
+    <div class="lb-row lb-row--winner">
+      <div>
+        <div class="lb-name">loglm</div>
+        <div class="lb-name-sub">deeptempo · projected</div>
       </div>
-      <div class="card-stats-dual">
-        <div class="card-stat-cell">
-          <span class="card-stat-num">0.88</span>
-          <div class="card-stat-label">verdict F1</div>
-        </div>
-        <div class="card-stat-cell">
-          <span class="card-stat-num">0.52</span>
-          <div class="card-stat-label">per-flow F1</div>
-        </div>
+      <span class="lb-lane lb-lane--purpose">Purpose-built</span>
+      <div class="lb-metric">
+        <span class="lb-metric-num">0.95</span>
+        <div class="lb-bar"><div class="lb-bar-fill" style="width:95%; background: var(--loglm);"></div></div>
       </div>
-      <div class="card-stat-meta">best persona: <code>soc_analyst</code></div>
+      <div class="lb-metric">
+        <span class="lb-metric-num">0.99</span>
+        <div class="lb-bar"><div class="lb-bar-fill" style="width:99%; background: var(--loglm);"></div></div>
+      </div>
+      <div class="lb-note">overall winner · &lt;$0.0001/alert</div>
     </div>
 
-    <div class="card card--slim openai">
-      <div class="card-head">
-        <div class="card-head-text">
-          <div class="card-provider">openai</div>
-          <div class="card-model">gpt-5.4</div>
-        </div>
-        <span class="card-pill card-pill--ops">
-          <svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 8 7 12 13 4"/></svg>
-          Best ops
-        </span>
+    <div class="lb-row">
+      <div>
+        <div class="lb-name">claude-opus-4-7</div>
+        <div class="lb-name-sub">anthropic</div>
       </div>
-      <div class="card-stats-dual">
-        <div class="card-stat-cell">
-          <span class="card-stat-num">0.86</span>
-          <div class="card-stat-label">verdict F1</div>
-        </div>
-        <div class="card-stat-cell">
-          <span class="card-stat-num">0.44</span>
-          <div class="card-stat-label">per-flow F1</div>
-        </div>
+      <span class="lb-lane lb-lane--frontier">Frontier LLM</span>
+      <div class="lb-metric">
+        <span class="lb-metric-num">0.93</span>
+        <div class="lb-bar"><div class="lb-bar-fill" style="width:93%; background: var(--anthropic);"></div></div>
       </div>
-      <div class="card-stat-meta">best persona: <code>threat_analyst</code></div>
+      <div class="lb-metric">
+        <span class="lb-metric-num">0.65</span>
+        <div class="lb-bar"><div class="lb-bar-fill" style="width:65%; background: var(--anthropic);"></div></div>
+      </div>
+      <div class="lb-note">best LLM · <code>soc_analyst</code></div>
+    </div>
+
+    <div class="lb-row">
+      <div>
+        <div class="lb-name">gemini-2.5-pro</div>
+        <div class="lb-name-sub">gemini</div>
+      </div>
+      <span class="lb-lane lb-lane--frontier">Frontier LLM</span>
+      <div class="lb-metric">
+        <span class="lb-metric-num">0.88</span>
+        <div class="lb-bar"><div class="lb-bar-fill" style="width:88%; background: var(--gemini);"></div></div>
+      </div>
+      <div class="lb-metric">
+        <span class="lb-metric-num">0.52</span>
+        <div class="lb-bar"><div class="lb-bar-fill" style="width:52%; background: var(--gemini);"></div></div>
+      </div>
+      <div class="lb-note">most balanced · <code>soc_analyst</code></div>
+    </div>
+
+    <div class="lb-row">
+      <div>
+        <div class="lb-name">gpt-5.4</div>
+        <div class="lb-name-sub">openai</div>
+      </div>
+      <span class="lb-lane lb-lane--frontier">Frontier LLM</span>
+      <div class="lb-metric">
+        <span class="lb-metric-num">0.86</span>
+        <div class="lb-bar"><div class="lb-bar-fill" style="width:86%; background: var(--openai);"></div></div>
+      </div>
+      <div class="lb-metric">
+        <span class="lb-metric-num">0.44</span>
+        <div class="lb-bar"><div class="lb-bar-fill" style="width:44%; background: var(--openai);"></div></div>
+      </div>
+      <div class="lb-note">best ops · <code>threat_analyst</code></div>
+    </div>
+
+    <div class="lb-row">
+      <div>
+        <div class="lb-name">foundation-sec-8b</div>
+        <div class="lb-name-sub">open weights</div>
+      </div>
+      <span class="lb-lane lb-lane--open">Open weights</span>
+      <div class="lb-metric">
+        <span class="lb-metric-num">0.75</span>
+        <div class="lb-bar"><div class="lb-bar-fill" style="width:75%; background: var(--foundation-sec);"></div></div>
+      </div>
+      <div class="lb-metric">
+        <span class="lb-metric-num">0.37</span>
+        <div class="lb-bar"><div class="lb-bar-fill" style="width:37%; background: var(--foundation-sec);"></div></div>
+      </div>
+      <div class="lb-note"><code>threat_analyst</code></div>
+    </div>
+
+    <div class="lb-row">
+      <div>
+        <div class="lb-name">seneca-qwq-32b</div>
+        <div class="lb-name-sub">open weights</div>
+      </div>
+      <span class="lb-lane lb-lane--open">Open weights</span>
+      <div class="lb-metric">
+        <span class="lb-metric-num">0.73</span>
+        <div class="lb-bar"><div class="lb-bar-fill" style="width:73%; background: var(--seneca);"></div></div>
+      </div>
+      <div class="lb-metric">
+        <span class="lb-metric-num">0.46</span>
+        <div class="lb-bar"><div class="lb-bar-fill" style="width:46%; background: var(--seneca);"></div></div>
+      </div>
+      <div class="lb-note"><code>soc_analyst</code></div>
+    </div>
+
+    <div class="lb-row">
+      <div>
+        <div class="lb-name">glm-5.2</div>
+        <div class="lb-name-sub">open weights</div>
+      </div>
+      <span class="lb-lane lb-lane--open">Open weights</span>
+      <div class="lb-metric">
+        <span class="lb-metric-num">0.48</span>
+        <div class="lb-bar"><div class="lb-bar-fill" style="width:48%; background: var(--glm);"></div></div>
+      </div>
+      <div class="lb-metric">
+        <span class="lb-metric-num">0.55</span>
+        <div class="lb-bar"><div class="lb-bar-fill" style="width:55%; background: var(--glm);"></div></div>
+      </div>
+      <div class="lb-note"><span class="lb-note-caveat">22% coverage</span><code>soc_analyst</code></div>
     </div>
   </div>
 
