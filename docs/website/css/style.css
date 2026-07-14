@@ -127,6 +127,42 @@ a:hover { text-decoration: underline; }
 }
 .repo-pill-count:empty { display: none; }
 
+/* ---------- announcement strips ---------- */
+.announcements {
+  border-bottom: 1px solid var(--border);
+}
+.announcement {
+  border-bottom: 1px solid var(--border);
+}
+.announcement:last-child { border-bottom: 0; }
+.announcement-inner {
+  max-width: 1100px; margin: 0 auto;
+  padding: 12px 24px;
+  display: flex; align-items: center; gap: 14px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--fg);
+}
+.announcement--new    { background: #ecfeff; border-left: 3px solid var(--loglm); }
+.announcement--coming { background: #fffbeb; border-left: 3px solid var(--warn); }
+.announcement-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-family: var(--mono); font-size: var(--text-micro); font-weight: 700;
+  padding: 4px 10px; border-radius: 999px;
+  white-space: nowrap; letter-spacing: 0.04em;
+  border: 1px solid transparent;
+}
+.announcement-badge--new    { background: #cffafe; color: #0e7490; border-color: #a5f3fc; }
+.announcement-badge--coming { background: #fef3c7; color: #b45309; border-color: #fde68a; }
+.announcement-text a {
+  color: inherit; font-weight: 600;
+  border-bottom: 1px solid currentColor;
+  padding-bottom: 1px;
+}
+.announcement-text a:hover { text-decoration: none; color: var(--accent); border-bottom-color: var(--accent); }
+.announcement--new    .announcement-text a { color: #0e7490; }
+.announcement--coming .announcement-text a { color: #b45309; }
+
 /* ---------- sections ---------- */
 section {
   max-width: 1100px; margin: 0 auto;
@@ -134,6 +170,8 @@ section {
   scroll-margin-top: 72px;
 }
 section + section { border-top: 1px solid var(--border); }
+/* The first section (#overview) sits directly under the announcement strips; drop its top padding. */
+.announcements + section { padding-top: 32px; }
 
 .eyebrow {
   text-transform: uppercase;
@@ -238,6 +276,14 @@ h3 { font-size: var(--text-h3); line-height: 1.3; margin: 32px 0 12px; }
   }
 }
 .section-sub { font-size: var(--text-body); color: var(--fg-muted); margin: 0 0 20px; max-width: 900px; }
+.chart-footnote {
+  font-size: var(--text-small); color: var(--fg-muted);
+  margin: 12px 0 24px; max-width: 900px; line-height: 1.5;
+}
+.chart-footnote code {
+  font-family: var(--mono); font-size: var(--text-small);
+  background: transparent; padding: 0; color: var(--fg-muted); font-weight: 700;
+}
 .legend {
   font-size: var(--text-small); color: var(--fg-muted);
   display: flex; flex-wrap: wrap; gap: 8px 4px; align-items: center;
@@ -632,7 +678,7 @@ h3 { font-size: var(--text-h3); line-height: 1.3; margin: 32px 0 12px; }
 .chart-title { font-size: var(--text-body); font-weight: 600; margin-bottom: 4px; }
 .chart-sub { font-size: var(--text-small); color: var(--fg-muted); margin-bottom: 6px; }
 .chart-canvas { position: relative; height: 320px; }
-.chart-canvas--compact { height: 200px; }
+.chart-canvas--compact { height: 280px; }
 
 /* 3-column grid for the overall summary trio (Cost / FPR / Completion).
    Collapses to a single column on narrow screens. */
@@ -716,6 +762,7 @@ tbody tr:hover { background: #f9fafb; }
 tbody tr:last-child td { border-bottom: 0; }
 td.num, th.num { text-align: right; font-family: var(--mono); }
 td.provider-cell { font-family: var(--mono); font-weight: 500; }
+tr.row-ghost td { color: var(--fg-dim); font-style: italic; background: #f9fafb; }
 td.persona-cell { font-family: var(--mono); color: var(--fg-muted); }
 
 /* ---------- collapsibles ---------- */

@@ -22,7 +22,6 @@
       <a href="#overview">Overview</a>
       <a href="#detection">Detection</a>
       <a href="#methodology">Methodology</a>
-      <a href="#vs-loglm">vs LogLM</a>
     </div>
     <div class="repo-pill" role="group" aria-label="GitHub repository">
       <a class="repo-pill-half repo-pill-left" href="https://github.com/DeepTempo/socbench" target="_blank" rel="noopener" aria-label="View on GitHub">
@@ -42,6 +41,30 @@
     </div>
   </div>
 </nav>
+
+<!-- ============================================================ -->
+<!-- announcement strips                                          -->
+<!-- ============================================================ -->
+<div class="announcements">
+  <div class="announcement announcement--new">
+    <div class="announcement-inner">
+      <span class="announcement-badge announcement-badge--new">
+        <svg viewBox="0 0 16 16" width="11" height="11" fill="currentColor" aria-hidden="true"><path d="M8 0l2 6h6l-5 3.5L13 16 8 12 3 16l2-6.5L0 6h6z"/></svg>
+        NEW
+      </span>
+      <span class="announcement-text">LogLM and open-weights model results now in <a href="#detection">Detection <span aria-hidden="true">→</span></a></span>
+    </div>
+  </div>
+  <div class="announcement announcement--coming">
+    <div class="announcement-inner">
+      <span class="announcement-badge announcement-badge--coming">
+        <svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="5 3 12 8 5 13"/></svg>
+        COMING NEXT
+      </span>
+      <span class="announcement-text">Harness for Vulnerability Detection and Patching. <a href="#capabilities">See roadmap <span aria-hidden="true">→</span></a></span>
+    </div>
+  </div>
+</div>
 
 <!-- ============================================================ -->
 <!-- overview                                                     -->
@@ -225,7 +248,7 @@
     </div>
   </div>
 
-  <h3>Current Capabilities and Road Map</h3>
+  <h3 id="capabilities">Current Capabilities and Road Map</h3>
 
   <div class="capabilities">
     <div class="cap cap-detection live">
@@ -390,7 +413,7 @@
 
     <div class="lb-row">
       <div>
-        <div class="lb-name">foundation-sec-8b</div>
+        <div class="lb-name">sec-8b</div>
         <div class="lb-name-sub">open weights</div>
       </div>
       <span class="lb-lane lb-lane--open">Open weights</span>
@@ -440,28 +463,29 @@
     </div>
   </div>
 
-  <h3>Provider ranking: mean across 4 personas</h3>
-  <p class="section-sub">The three summary charts below are overall (across all 1,205 units). The per-flow / verdict F1 chart further down responds to the split tabs.</p>
+  <h3>Cost, reliability, and false positives</h3>
+  <p class="section-sub">Overall across all 1,205 units. LLM bars are the mean across 4 personas; LogLM is the single classifier. The per-flow / verdict F1 chart further down responds to the split tabs.</p>
 
   <div class="chart-grid">
     <div class="chart-wrap chart-wrap--grid">
       <div class="chart-title">Avg. cost per alert</div>
-      <div class="chart-sub">Total spend ÷ (1,205 units × 4 personas). One persona = one verdict = one alert.</div>
+      <div class="chart-sub">$ per verdict, log scale.</div>
       <div class="chart-canvas chart-canvas--compact"><canvas id="cost-bars"></canvas></div>
     </div>
 
     <div class="chart-wrap chart-wrap--grid">
       <div class="chart-title">FP rate</div>
-      <div class="chart-sub">Share of benign units the model wrongly called malicious.</div>
+      <div class="chart-sub">Benign units wrongly flagged malicious.</div>
       <div class="chart-canvas chart-canvas--compact"><canvas id="fpr-bars"></canvas></div>
     </div>
 
     <div class="chart-wrap chart-wrap--grid">
       <div class="chart-title">Completion rate</div>
-      <div class="chart-sub">Fraction of renderings that completed cleanly within budget.</div>
+      <div class="chart-sub">Renderings completed within budget.</div>
       <div class="chart-canvas chart-canvas--compact"><canvas id="completion-bars"></canvas></div>
     </div>
   </div>
+  <p class="chart-footnote"><code>*</code> glm-5.2 reached only 27% of the 1,205 shared units (328 of 1,205); bars use that subset and may not be representative of the model at full coverage.</p>
 
   <div class="tabs" role="tablist" aria-label="Gold-label split">
     <button class="tab active" data-split="benign"
@@ -678,7 +702,7 @@
 <section id="results">
   <div class="eyebrow">Detection · Per-persona detail</div>
   <h2>F1, cost, and reliability per persona</h2>
-  <p class="lead">All 12 (provider × persona) configurations plotted on the F1 / cost frontier, with the cross-provider winner on each dimension called out.</p>
+  <p class="lead">All 25 configurations plotted on the F1 / cost frontier: 6 LLMs × 4 personas, plus LogLM. Winners on each contract dimension called out below (LLMs only, since LogLM has no personas).</p>
   <p class="lead">At one million alerts a day, the cheapest LLM stack ($0.057 per alert) is roughly $60,000 of inference every day, before a single analyst looks at the output. At telco scale (a large telco active in the Vigil community reports approximately 70 million flow events per minute, which batches into roughly 2 billion alerts per day at 50 flows per alert), the LLM bill runs to hundreds of millions of dollars per day ($114M at the cheapest provider, ~$302M at the priciest).</p>
 
   <div class="chart-wrap">
@@ -697,8 +721,8 @@
     </div>
   </div>
 
-  <h3>Pick your persona</h3>
-  <p class="section-sub">For each contract dimension, the winning (provider × persona) configuration across all 12 combinations.</p>
+  <h3>Pick your persona · LLMs only</h3>
+  <p class="section-sub">For each contract dimension, the winning (LLM × persona) configuration across all 24 combinations. LogLM excluded here since it has no personas.</p>
   <div class="pick-cards">
     <div class="pick-card pick-card--efficacy">
       <div class="pick-card-label">
@@ -723,9 +747,9 @@
         <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="8" y1="1" x2="8" y2="15"/><path d="M11 4H7a2 2 0 0 0 0 4h2a2 2 0 0 1 0 4H5"/></svg>
         Lowest cost
       </div>
-      <div class="pick-card-metric">$0.034</div>
-      <div class="pick-card-unit">per alert (total $41.17 / 1,205)</div>
-      <div class="pick-card-who"><strong>openai</strong> · <code>soc_analyst</code></div>
+      <div class="pick-card-metric">$0.006</div>
+      <div class="pick-card-unit">per alert (total $7.10 / 1,205)</div>
+      <div class="pick-card-who"><strong>sec-8b</strong> · <code>soc_analyst</code></div>
     </div>
 
     <div class="pick-card pick-card--reliability">
@@ -740,22 +764,9 @@
   </div>
 
   <details>
-    <summary>All 12 (provider × persona) rows</summary>
+    <summary>All 25 rows (24 LLM configurations plus LogLM)</summary>
     <div id="per-persona-table"></div>
   </details>
-</section>
-
-<!-- ============================================================ -->
-<!-- vs LogLM (placeholder)                                       -->
-<!-- ============================================================ -->
-<section id="vs-loglm">
-  <div class="eyebrow">Detection · External baseline</div>
-  <h2>vs LogLM</h2>
-  <p class="lead">Head-to-head with the trained sequence classifier on the same source datasets, with the granularity caveats spelled out.</p>
-  <div class="callout warn">
-    <div class="callout-title">Coming soon</div>
-    <p>Head-to-head comparison with LogLM lands here in a future update.</p>
-  </div>
 </section>
 
 <!-- ============================================================ -->
