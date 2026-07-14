@@ -499,7 +499,9 @@ def _debug_dump(request: Any, raw: dict[str, Any], parsed: Any) -> None:
         pass
 
 
-def _json_loads(text: str) -> dict[str, Any]:
+def _json_loads(text: Any) -> dict[str, Any]:
+    if isinstance(text, dict):
+        return text
     try:
         parsed = json.loads(text)
         if isinstance(parsed, dict):

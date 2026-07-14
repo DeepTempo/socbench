@@ -144,3 +144,32 @@ def test_native_tool_calls_unaffected_by_fallback() -> None:
     assert parsed.tool_call is not None
     assert parsed.tool_call.name == "list_pairs"
     assert parsed.tool_call.args == {"sort": "flow_count"}
+
+
+def test_native_tool_calls_already_decoded_dict_works() -> None:
+    # Some endpoints return arguments as a decoded dict instead of a JSON string.
+    raw = {
+        "choices": [
+            {
+                "message": {
+                    "content": "",
+                    "tool_calls": [
+                        {
+                            "type": "function",
+                            "id": "call_2",
+                            "function": {
+                                "name": "list_pairs",
+                                "arguments": {"sort": "flow_count"},
+                            },
+                        }
+                    ],
+                },
+                "finish_reason": "tool_calls",
+            }
+        ],
+        "usage": {},
+    }
+    parsed = _parse_chat_response(raw, SUBMIT, 0, valid_tool_names=TOOLS)
+    assert parsed.tool_call is not None
+    assert parsed.tool_call.name == "list_pairs"
+    assert parsed.tool_call.args == {"sort": "flow_count"}
