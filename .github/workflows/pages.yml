@@ -25,6 +25,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Cache-bust static assets with commit SHA
+        # Append ?v=<short-sha> to css/js references in index.html so browsers
+        # refetch on every deploy instead of serving stale files from cache.
+        run: |
+          SHA=${GITHUB_SHA::12}
+          FILE=docs/website/index.html
+          sed -i "s|href=\"css/style.css\"|href=\"css/style.css?v=$SHA\"|g" "$FILE"
+          sed -i "s|src=\"js/data.js\"|src=\"js/data.js?v=$SHA\"|g" "$FILE"
+          sed -i "s|src=\"js/main.js\"|src=\"js/main.js?v=$SHA\"|g" "$FILE"
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
