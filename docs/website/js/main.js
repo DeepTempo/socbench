@@ -496,7 +496,7 @@
           ${data.perPersona.map(r => `
             <tr>
               <td class="provider-cell">${providerLabel(r.provider)}</td>
-              <td class="persona-cell">${r.persona || "—"}</td>
+              <td class="persona-cell">${r.persona || "-"}</td>
               <td class="num">${fmtPct(r.fpv)}</td>
               <td class="num">${fmtF1(r.verdictAcc)}</td>
               <td class="num">${fmtF1(r.verdictF1)}</td>
