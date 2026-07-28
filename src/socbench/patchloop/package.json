@@ -1,0 +1,36 @@
+{
+  "name": "patchloop",
+  "version": "0.1.0",
+  "description": "Verification-loop remediation harness for security findings: propose a patch, verify with your own detector, feed failures back, retry.",
+  "type": "module",
+  "private": true,
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "example": "tsx examples/remediate-cve.ts"
+  },
+  "keywords": [
+    "security",
+    "remediation",
+    "cve",
+    "ai-soc",
+    "patching",
+    "agents",
+    "effect"
+  ],
+  "dependencies": {
+    "effect": "^3.22.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.1",
+    "tsx": "^4.23.1",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.10"
+  }
+}

@@ -80,8 +80,12 @@
        TAB 1. VERIFICATION LOOP
        ============================================================ -->
   <div class="panel active" id="panel-harness">
+    <div class="patcheval-disclaimer" role="note" style="margin:0 0 1.25rem;padding:0.85rem 1rem;border-left:3px solid var(--warn,#e0a458);background:rgba(224,164,88,0.08);border-radius:6px;font-size:0.92rem;line-height:1.5">
+      <strong>Disclaimer.</strong> These results are from the original <a href="https://github.com/bytedance/PatchEval" target="_blank" rel="noopener">PatchEval</a> benchmark. On July 24, 2026 &mdash; after these runs &mdash; ByteDance released <strong>PatchEval-Verified</strong>, with revised Docker environments and a new leaderboard. The numbers on this page predate that release and are <strong>not comparable</strong> to PatchEval-Verified. We plan to re-run against the updated version and will follow up.
+    </div>
+
     <div class="patcheval-block patcheval-block--master">
-      <div class="patcheval-block-label">PatchLoop on PatchEval</div>
+      <div class="patcheval-block-label">PatchLoop on PatchEval (original)</div>
       <div class="patcheval-hero-inline">
         <span class="patcheval-hero-num">+25.2pp</span>
         <span class="patcheval-hero-lbl">from PatchLoop with feedback loop</span>
@@ -93,13 +97,13 @@
         <div class="stat"><div class="val">&le;3</div><div class="lbl">bounded attempts</div></div>
       </div>
       <p class="patcheval-note">
-        <a href="https://github.com/bytedance/PatchEval" target="_blank" rel="noopener"><strong>PatchEval-Verified</strong></a> (ByteDance) is a benchmark of 230 real-world CVEs from 2015 to 2025, across Go, JavaScript, and Python. Each case ships as a Docker image containing the vulnerable repo and a validation entrypoint that checks whether the vulnerability is still exploitable after a patch.
+        <a href="https://github.com/bytedance/PatchEval" target="_blank" rel="noopener"><strong>PatchEval</strong></a> (ByteDance) is a benchmark of 230 real-world CVEs from 2015 to 2025, across Go, JavaScript, and Python. Each case ships as a Docker image containing the vulnerable repo and a validation entrypoint that checks whether the vulnerability is still exploitable after a patch.
       </p>
     </div>
 
-    <!-- Leaderboard comparison: PatchLoop vs the current best agent frameworks on PatchEval-Verified -->
+    <!-- Leaderboard comparison: PatchLoop vs the agent frameworks on the original PatchEval board -->
     <div class="pev-leaderboard">
-      <div class="pev-leaderboard-label">vs. PatchEval-Verified leaderboard</div>
+      <div class="pev-leaderboard-label">vs. original PatchEval leaderboard</div>
       <div class="table-wrap">
         <table class="pev-table">
           <thead>
@@ -163,7 +167,7 @@
         </table>
       </div>
       <p class="pev-leaderboard-footnote">
-        The verify-feedback loop clears the entire agent leaderboard by ~21pp. Values as of 2026-07-27. Source: <a href="https://github.com/bytedance/PatchEval" target="_blank" rel="noopener">bytedance/PatchEval</a>.
+        Board rows are from the original PatchEval leaderboard (values as of 2026-07-27). PatchLoop's verify-feedback row uses validation output, so it was not eligible for that leaderboard and is shown for context only. See the disclaimer above regarding <a href="https://github.com/bytedance/PatchEval" target="_blank" rel="noopener">PatchEval-Verified</a>.
       </p>
     </div>
 

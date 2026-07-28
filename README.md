@@ -142,6 +142,20 @@ dataset so it needs no committed data) and plots per-persona F1.
 results by stratum, persona, and provider. Install with
 `pip install -e ".[notebooks]"`.
 
+## PatchLoop
+
+[`src/socbench/patchloop`](src/socbench/patchloop) contains PatchLoop, a
+TypeScript verification-loop remediation harness. It proposes a patch, verifies
+it with the detector or reproduction that raised the finding, and feeds failures
+into a bounded repair attempt. PatchLoop uses Node 20+ and has its own npm
+dependencies and test suite:
+
+```bash
+cd src/socbench/patchloop
+npm install
+npm test
+```
+
 ## Extending the benchmark
 
 Every interface designed to evolve is a registry or a YAML key:

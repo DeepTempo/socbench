@@ -1,0 +1,12 @@
+{
+  "id": "CVE-2099-0001",
+  "kind": "cve",
+  "title": "Example: path traversal in file download endpoint",
+  "description": "The /download endpoint joins user-supplied filenames onto the served directory without normalization, allowing ../ traversal outside the intended root. Reported by the image scanner against the application layer.",
+  "detector": "trivy",
+  "locations": [],
+  "metadata": {
+    "rescan_command": "trivy fs --scanners vuln --quiet {workspace}",
+    "test_command": "make test"
+  }
+}
