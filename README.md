@@ -2,6 +2,10 @@
 
 > An open benchmark and harnesses for AI in cybersecurity operations.
 
+> [!IMPORTANT]
+> **NEW: PatchLoop.** On PatchEval (ByteDance), PatchLoop clears OpenHands, Claude Code, and SWE-agent by 20+ points: one verify-feedback round lifts strict score from 33.5% to 57.4% at ~$0.17/CVE.
+> [See the harness](src/socbench/patchloop) · [How it works](https://socbench.org/patchloop/) · [Jump to section](#patchloop-vulnerability-detection-and-patching)
+
 **What you can't measure, you can't improve. What you can't measure, you also
 can't validate.** AI in cybersecurity operations is outpacing both: vendors
 ship new agents faster than anyone can compare them on telemetry that
