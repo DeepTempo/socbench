@@ -43,8 +43,8 @@ jobs:
         run: |
           SHA=${GITHUB_SHA::12}
           for FILE in $(find docs/website -name '*.html'); do
-            sed -i -E "s|(href=\"((\\.\\./)*)css/(style|harness)\\.css)\"|\\1?v=$SHA\"|g" "$FILE"
-            sed -i -E "s|(src=\"((\\.\\./)*)js/(data|main|patchloop)\\.js)\"|\\1?v=$SHA\"|g" "$FILE"
+            sed -i -E "s#(href=\"((\\.\\./)*)css/(style|harness)\\.css)\"#\\1?v=$SHA\"#g" "$FILE"
+            sed -i -E "s#(src=\"((\\.\\./)*)js/(data|main|patchloop)\\.js)\"#\\1?v=$SHA\"#g" "$FILE"
           done
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
