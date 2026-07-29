@@ -18,6 +18,9 @@
   --foundation-sec: #2563eb;  /* blue-600 */
   --seneca:         #db2777;  /* pink-600 */
   --glm:            #65a30d;  /* lime-600 */
+  /* Capability accent tokens. Provider tokens above must NOT double as capability accents. */
+  --cap-vulnerability:      #ea580c;  /* orange-600 · vuln-harness identity */
+  --cap-vulnerability-soft: #ffedd5;  /* orange-100 */
   --good: #16a34a;
   --warn: #d97706;
   --bad:  #dc2626;
@@ -145,6 +148,7 @@ a:hover { text-decoration: underline; }
 }
 .announcement--new    { background: #ecfeff; border-left: 3px solid var(--loglm); }
 .announcement--coming { background: #fffbeb; border-left: 3px solid var(--warn); }
+.announcement--vuln   { background: #fff7ed; border-left: 3px solid var(--cap-vulnerability); }
 .announcement-badge {
   display: inline-flex; align-items: center; gap: 5px;
   font-family: var(--mono); font-size: var(--text-micro); font-weight: 700;
@@ -154,6 +158,7 @@ a:hover { text-decoration: underline; }
 }
 .announcement-badge--new    { background: #cffafe; color: #0e7490; border-color: #a5f3fc; }
 .announcement-badge--coming { background: #fef3c7; color: #b45309; border-color: #fde68a; }
+.announcement-badge--vuln   { background: var(--cap-vulnerability-soft); color: #9a3412; border-color: #fdba74; }
 .announcement-text a {
   color: inherit; font-weight: 600;
   border-bottom: 1px solid currentColor;
@@ -162,6 +167,65 @@ a:hover { text-decoration: underline; }
 .announcement-text a:hover { text-decoration: none; color: var(--accent); border-bottom-color: var(--accent); }
 .announcement--new    .announcement-text a { color: #0e7490; }
 .announcement--coming .announcement-text a { color: #b45309; }
+.announcement--vuln   .announcement-text a { color: #9a3412; }
+
+/* Breadcrumb pill in nav ("you are here"). Uses body-scope --page-accent tokens
+   (set per-page: harness-vuln = orange, page-detection = LogLM cyan). */
+.nav-current {
+  font-family: var(--mono);
+  font-size: var(--text-micro);
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: var(--page-accent-soft, var(--harness-accent-soft, #f3f4f6));
+  color: var(--page-accent, var(--harness-accent, var(--fg-muted)));
+  border: 1px solid var(--page-accent, var(--harness-accent, var(--border)));
+  white-space: nowrap;
+  letter-spacing: 0.04em;
+  font-weight: 600;
+}
+body.page-detection {
+  --page-accent:      var(--loglm);
+  --page-accent-soft: #cffafe;
+}
+
+/* Shared "you are here" context strip below the nav. Sub-pages set --page-accent
+   (harness-vuln = orange, page-detection = LogLM cyan, future pages = their own). */
+.page-context {
+  border-bottom: 1px solid var(--border);
+  background: var(--page-accent-soft, var(--harness-accent-soft, #f3f4f6));
+  border-left: 3px solid var(--page-accent, var(--harness-accent, var(--border)));
+}
+.page-context-inner {
+  max-width: 1100px; margin: 0 auto;
+  padding: 10px 24px;
+  display: flex; align-items: center; gap: 16px;
+  font-size: var(--text-small);
+  color: var(--fg);
+}
+.page-context-back {
+  font-family: var(--mono);
+  font-size: var(--text-micro);
+  font-weight: 600;
+  color: var(--page-accent, var(--harness-accent, var(--fg-muted)));
+  border-bottom: 1px solid currentColor;
+  padding-bottom: 1px;
+  white-space: nowrap;
+}
+.page-context-back:hover { text-decoration: none; }
+.page-context-crumb { color: var(--fg-muted); }
+.page-context-crumb strong { color: var(--fg); }
+@media (max-width: 720px) {
+  .repo-pill-half:first-child span { display: none; }
+  .repo-pill-count { display: none; }
+}
+
+/* Harness page body scope: sets --harness-accent aliases + --page-accent for shared components. */
+body.harness-patchloop {
+  --harness-accent:      var(--cap-vulnerability);
+  --harness-accent-soft: var(--cap-vulnerability-soft);
+  --page-accent:         var(--cap-vulnerability);
+  --page-accent-soft:    var(--cap-vulnerability-soft);
+}
 
 /* ---------- sections ---------- */
 section {
@@ -171,7 +235,8 @@ section {
 }
 section + section { border-top: 1px solid var(--border); }
 /* The first section (#overview) sits directly under the announcement strips; drop its top padding. */
-.announcements + section { padding-top: 32px; }
+.announcements + section,
+.page-context + section { padding-top: 32px; }
 
 .eyebrow {
   text-transform: uppercase;
@@ -247,6 +312,7 @@ h3 { font-size: var(--text-h3); line-height: 1.3; margin: 32px 0 12px; }
 .origin-chip {
   display: inline-flex;
   align-items: center;
+  gap: 6px;
   text-decoration: none;
   transition: opacity .15s, transform .15s;
   opacity: 0.95;
@@ -261,6 +327,13 @@ h3 { font-size: var(--text-h3); line-height: 1.3; margin: 32px 0 12px; }
   height: 36px;
   width: auto;
 }
+.origin-chip-arrow {
+  font-size: 13px;
+  color: var(--fg-dim);
+  line-height: 1;
+  transition: color .15s;
+}
+.origin-chip:hover .origin-chip-arrow { color: var(--accent); }
 .origin-body {
   flex: 1;
   margin: 0;
@@ -434,11 +507,15 @@ h3 { font-size: var(--text-h3); line-height: 1.3; margin: 32px 0 12px; }
 .cap-hunting       { --cap-accent: #0891b2; }
 .cap-engineering   { --cap-accent: #059669; }
 .cap-threatintel   { --cap-accent: #4f46e5; }
+.cap-vulnerability { --cap-accent: var(--cap-vulnerability); }
 .cap-response      { --cap-accent: #dc2626; }
 
 .cap.live      { background: #f0fdf4; border-color: #bbf7d0; }
 .cap.exploring { background: #fffbeb; border-color: #fde68a; }
 .cap.planned   { opacity: 0.95; }
+/* Vuln-live gets an orange-tinted surface so the identity stays with the accent, not the generic live-green. */
+.cap-vulnerability.live { background: #fff7ed; border-color: #fed7aa; }
+.cap-vulnerability.live .cap-badge { background: var(--cap-vulnerability-soft); color: #9a3412; }
 
 .cap-head {
   display: flex;
@@ -1115,12 +1192,79 @@ pre code { background: transparent; padding: 0; }
 }
 
 /* ---------- footer ---------- */
+/* ---------- editorial footer (shared across all pages) ---------- */
 .footer {
-  max-width: 1100px; margin: 0 auto;
-  padding: 32px 24px 48px;
   border-top: 1px solid var(--border);
-  color: var(--fg-dim); font-size: var(--text-small);
+  background: var(--bg);
+  margin-top: 40px;
+}
+.footer-inner {
+  max-width: 1100px; margin: 0 auto;
+  padding: 32px 24px 20px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 40px;
+  align-items: start;
+}
+.footer-copy .eyebrow { margin-bottom: 6px; }
+.footer-copy h2 {
+  font-size: 24px; line-height: 1.2;
+  font-weight: 600; letter-spacing: -0.02em;
+  margin: 0 0 8px;
+}
+.footer-copy p {
+  color: var(--fg-muted);
+  font-size: var(--text-body);
+  line-height: 1.5;
+  max-width: 620px;
+  margin: 0 0 14px;
+}
+.footer-origin {
+  display: flex; flex-direction: column;
+  align-items: flex-start; gap: 10px;
+  min-width: 0;
+}
+.footer-origin-label {
+  font-family: var(--mono);
+  font-size: var(--text-micro);
+  color: var(--fg-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-weight: 600;
+}
+.footer-origin-logos {
+  display: flex; flex-direction: column; gap: 12px;
+}
+.footer-origin-item {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  opacity: 0.95;
+  transition: opacity .15s, transform .15s;
+}
+.footer-origin-item:hover { opacity: 1; transform: translateY(-1px); text-decoration: none; }
+.footer-origin-item img { height: 36px; width: auto; display: block; }
+.footer-origin-caption {
+  font-family: var(--mono);
+  font-size: var(--text-micro);
+  color: var(--fg-muted);
+  letter-spacing: -0.01em;
+  transition: color .15s;
+}
+.footer-origin-item:hover .footer-origin-caption { color: var(--accent); }
+.footer-bottom {
+  max-width: 1100px; margin: 0 auto;
+  padding: 14px 24px 20px;
+  border-top: 1px solid var(--border);
+  color: var(--fg-dim);
+  font-size: var(--text-small);
   display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+}
+@media (max-width: 720px) {
+  .footer-inner { grid-template-columns: 1fr; gap: 32px; }
+  .footer-origin { flex-direction: row; align-items: center; }
+  .footer-origin-logos { flex-direction: row; }
 }
 
 /* ---------- responsive ---------- */

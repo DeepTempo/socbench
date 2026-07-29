@@ -25,15 +25,27 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Copy rule against em-dashes and en-dashes
+        # Fail the build if a stray em-dash or en-dash slips into shipped copy
+        # (user rule: substitute periods / colons / hyphens / parens). Runs
+        # before cache-bust to fail early on the raw source.
+        run: |
+          if grep -rnE '—|–|&mdash;|&ndash;' $(find docs/website -name '*.html') docs/website/js/*.js; then
+            echo "::error::em-dash / en-dash found in shipped copy. Substitute periods, colons, or hyphens."
+            exit 1
+          fi
       - name: Cache-bust static assets with commit SHA
-        # Append ?v=<short-sha> to css/js references in index.html so browsers
-        # refetch on every deploy instead of serving stale files from cache.
+        # Append ?v=<short-sha> to css/js references in every deployed HTML file
+        # so browsers refetch on every deploy instead of serving stale files.
+        # Walks all HTML files recursively (root + subdirectories). Regex matches
+        # both root-relative (css/foo.css) and parent-relative (../css/foo.css)
+        # asset paths so subpages under docs/website/{slug}/ are handled too.
         run: |
           SHA=${GITHUB_SHA::12}
-          FILE=docs/website/index.html
-          sed -i "s|href=\"css/style.css\"|href=\"css/style.css?v=$SHA\"|g" "$FILE"
-          sed -i "s|src=\"js/data.js\"|src=\"js/data.js?v=$SHA\"|g" "$FILE"
-          sed -i "s|src=\"js/main.js\"|src=\"js/main.js?v=$SHA\"|g" "$FILE"
+          for FILE in $(find docs/website -name '*.html'); do
+            sed -i -E "s|(href=\"((\\.\\./)*)css/(style|harness)\\.css)\"|\\1?v=$SHA\"|g" "$FILE"
+            sed -i -E "s|(src=\"((\\.\\./)*)js/(data|main|patchloop)\\.js)\"|\\1?v=$SHA\"|g" "$FILE"
+          done
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

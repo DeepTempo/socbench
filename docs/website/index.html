@@ -20,8 +20,8 @@
     <a class="nav-brand" href="#overview"><span class="dot"></span>SOCBench</a>
     <div class="nav-links">
       <a href="#overview">Overview</a>
-      <a href="#detection">Detection</a>
-      <a href="#methodology">Methodology</a>
+      <a href="detection/">Detection</a>
+      <a href="patchloop/">PatchLoop</a>
     </div>
     <div class="repo-pill" role="group" aria-label="GitHub repository">
       <a class="repo-pill-half repo-pill-left" href="https://github.com/DeepTempo/socbench" target="_blank" rel="noopener" aria-label="View on GitHub">
@@ -52,16 +52,16 @@
         <svg viewBox="0 0 16 16" width="11" height="11" fill="currentColor" aria-hidden="true"><path d="M8 0l2 6h6l-5 3.5L13 16 8 12 3 16l2-6.5L0 6h6z"/></svg>
         NEW
       </span>
-      <span class="announcement-text">LogLM and open-weights model results now in <a href="#detection">Detection <span aria-hidden="true">→</span></a></span>
+      <span class="announcement-text">LogLM and open-weights model results now in <a href="detection/">Detection <span aria-hidden="true">→</span></a></span>
     </div>
   </div>
-  <div class="announcement announcement--coming">
+  <div class="announcement announcement--vuln">
     <div class="announcement-inner">
-      <span class="announcement-badge announcement-badge--coming">
-        <svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="5 3 12 8 5 13"/></svg>
-        COMING NEXT
+      <span class="announcement-badge announcement-badge--vuln">
+        <svg viewBox="0 0 16 16" width="11" height="11" fill="currentColor" aria-hidden="true"><path d="M8 0l2 6h6l-5 3.5L13 16 8 12 3 16l2-6.5L0 6h6z"/></svg>
+        NEW
       </span>
-      <span class="announcement-text">Harness for Vulnerability Detection and Patching. <a href="#capabilities">See roadmap <span aria-hidden="true">→</span></a></span>
+      <span class="announcement-text">On PatchEval (ByteDance), PatchLoop clears OpenHands and SWE-agent by 20+ points. <a href="patchloop/">See how <span aria-hidden="true">→</span></a></span>
     </div>
   </div>
 </div>
@@ -172,9 +172,11 @@
       <div class="origin-chips">
         <a class="origin-chip" href="https://deeptempo.ai" target="_blank" rel="noopener" aria-label="DeepTempo">
           <img src="img/deeptempo-logo.png" alt="DeepTempo" class="origin-chip-logo" />
+          <span class="origin-chip-arrow" aria-hidden="true">&#8599;</span>
         </a>
         <a class="origin-chip" href="https://github.com/Vigil-SOC/vigil" target="_blank" rel="noopener" aria-label="Vigil">
           <img src="img/vigil-logo.png" alt="Vigil" class="origin-chip-logo" />
+          <span class="origin-chip-arrow" aria-hidden="true">&#8599;</span>
         </a>
       </div>
       <p class="origin-body">
@@ -257,7 +259,7 @@
         <span class="cap-badge">Live</span>
       </div>
       <div class="cap-desc">Classify flows, logs, or alerts as malicious or benign (the core work of the monitoring tier).</div>
-      <a class="cap-cta" href="#detection">See results →</a>
+      <a class="cap-cta" href="detection/">See results →</a>
     </div>
     <div class="cap cap-triage planned">
       <div class="cap-head">
@@ -294,12 +296,13 @@
       </div>
       <div class="cap-desc">IOC enrichment, threat-actor attribution, MITRE ATT&amp;CK mapping.</div>
     </div>
-    <div class="cap cap-vulnerability planned">
+    <div class="cap cap-vulnerability live">
       <div class="cap-head">
         <div class="cap-title">Vulnerability detection and patching</div>
-        <span class="cap-badge">Roadmap</span>
+        <span class="cap-badge">Live</span>
       </div>
       <div class="cap-desc">Identify exploitable vulnerabilities across assets, prioritize by risk, and propose or apply patches.</div>
+      <a class="cap-cta" href="patchloop/">See PatchLoop harness →</a>
     </div>
     <div class="cap cap-response exploring">
       <div class="cap-head">
@@ -317,495 +320,39 @@
   </p>
 </section>
 
-<!-- ============================================================ -->
-<!-- detection capability: current published results              -->
-<!-- ============================================================ -->
-<section id="detection">
-  <div class="eyebrow">Capability · Live</div>
-  <h2>Detection</h2>
-  <p class="lead">The Detection benchmark scores three lanes on 1,205 evaluation units:</p>
-  <ol class="lead-lanes">
-    <li><strong>Frontier LLMs.</strong> Claude Opus 4.7, GPT-5.4, Gemini 2.5 Pro.</li>
-    <li><strong>Open weights.</strong> Foundation-Sec-8B, Seneca-QwQ-32B, GLM 5.2.</li>
-    <li><strong>Foundation model for cybersecurity.</strong> LogLM, DeepTempo's encoder-only model.</li>
-  </ol>
-  <p class="lead">
-    All LLMs run in the same <strong>detection harness</strong>: four analyst personas with <a href="#persona-tools">network-flow tools</a> submitting per-unit verdicts.
-    LogLM scores sequences directly, projected onto the eval-unit class prior.
-  </p>
-
-  <div class="leaderboard">
-    <div class="lb-row lb-row--head">
-      <div>System</div>
-      <div>Lane</div>
-      <div>Verdict F1</div>
-      <div>Per-flow F1</div>
-      <div>Note</div>
-    </div>
-
-    <div class="lb-row lb-row--winner">
-      <div>
-        <div class="lb-name">loglm</div>
-        <div class="lb-name-sub">deeptempo · projected</div>
-      </div>
-      <span class="lb-lane lb-lane--purpose">Purpose-built</span>
-      <div class="lb-metric">
-        <span class="lb-metric-num">0.95</span>
-        <div class="lb-bar"><div class="lb-bar-fill" style="width:95%; background: var(--loglm);"></div></div>
-      </div>
-      <div class="lb-metric">
-        <span class="lb-metric-num">0.99</span>
-        <div class="lb-bar"><div class="lb-bar-fill" style="width:99%; background: var(--loglm);"></div></div>
-      </div>
-      <div class="lb-note">overall winner · &lt;$0.0001/alert</div>
-    </div>
-
-    <div class="lb-row">
-      <div>
-        <div class="lb-name">claude-opus-4-7</div>
-        <div class="lb-name-sub">anthropic</div>
-      </div>
-      <span class="lb-lane lb-lane--frontier">Frontier LLM</span>
-      <div class="lb-metric">
-        <span class="lb-metric-num">0.93</span>
-        <div class="lb-bar"><div class="lb-bar-fill" style="width:93%; background: var(--anthropic);"></div></div>
-      </div>
-      <div class="lb-metric">
-        <span class="lb-metric-num">0.65</span>
-        <div class="lb-bar"><div class="lb-bar-fill" style="width:65%; background: var(--anthropic);"></div></div>
-      </div>
-      <div class="lb-note">best LLM · <code>soc_analyst</code></div>
-    </div>
-
-    <div class="lb-row">
-      <div>
-        <div class="lb-name">gemini-2.5-pro</div>
-        <div class="lb-name-sub">gemini</div>
-      </div>
-      <span class="lb-lane lb-lane--frontier">Frontier LLM</span>
-      <div class="lb-metric">
-        <span class="lb-metric-num">0.88</span>
-        <div class="lb-bar"><div class="lb-bar-fill" style="width:88%; background: var(--gemini);"></div></div>
-      </div>
-      <div class="lb-metric">
-        <span class="lb-metric-num">0.52</span>
-        <div class="lb-bar"><div class="lb-bar-fill" style="width:52%; background: var(--gemini);"></div></div>
-      </div>
-      <div class="lb-note">most balanced · <code>soc_analyst</code></div>
-    </div>
-
-    <div class="lb-row">
-      <div>
-        <div class="lb-name">gpt-5.4</div>
-        <div class="lb-name-sub">openai</div>
-      </div>
-      <span class="lb-lane lb-lane--frontier">Frontier LLM</span>
-      <div class="lb-metric">
-        <span class="lb-metric-num">0.86</span>
-        <div class="lb-bar"><div class="lb-bar-fill" style="width:86%; background: var(--openai);"></div></div>
-      </div>
-      <div class="lb-metric">
-        <span class="lb-metric-num">0.44</span>
-        <div class="lb-bar"><div class="lb-bar-fill" style="width:44%; background: var(--openai);"></div></div>
-      </div>
-      <div class="lb-note">best ops · <code>threat_analyst</code></div>
-    </div>
-
-    <div class="lb-row">
-      <div>
-        <div class="lb-name">sec-8b</div>
-        <div class="lb-name-sub">open weights</div>
-      </div>
-      <span class="lb-lane lb-lane--open">Open weights</span>
-      <div class="lb-metric">
-        <span class="lb-metric-num">0.75</span>
-        <div class="lb-bar"><div class="lb-bar-fill" style="width:75%; background: var(--foundation-sec);"></div></div>
-      </div>
-      <div class="lb-metric">
-        <span class="lb-metric-num">0.37</span>
-        <div class="lb-bar"><div class="lb-bar-fill" style="width:37%; background: var(--foundation-sec);"></div></div>
-      </div>
-      <div class="lb-note"><code>threat_analyst</code></div>
-    </div>
-
-    <div class="lb-row">
-      <div>
-        <div class="lb-name">seneca-qwq-32b</div>
-        <div class="lb-name-sub">open weights</div>
-      </div>
-      <span class="lb-lane lb-lane--open">Open weights</span>
-      <div class="lb-metric">
-        <span class="lb-metric-num">0.73</span>
-        <div class="lb-bar"><div class="lb-bar-fill" style="width:73%; background: var(--seneca);"></div></div>
-      </div>
-      <div class="lb-metric">
-        <span class="lb-metric-num">0.46</span>
-        <div class="lb-bar"><div class="lb-bar-fill" style="width:46%; background: var(--seneca);"></div></div>
-      </div>
-      <div class="lb-note"><code>soc_analyst</code></div>
-    </div>
-
-    <div class="lb-row">
-      <div>
-        <div class="lb-name">glm-5.2</div>
-        <div class="lb-name-sub">open weights</div>
-      </div>
-      <span class="lb-lane lb-lane--open">Open weights</span>
-      <div class="lb-metric">
-        <span class="lb-metric-num">0.48</span>
-        <div class="lb-bar"><div class="lb-bar-fill" style="width:48%; background: var(--glm);"></div></div>
-      </div>
-      <div class="lb-metric">
-        <span class="lb-metric-num">0.55</span>
-        <div class="lb-bar"><div class="lb-bar-fill" style="width:55%; background: var(--glm);"></div></div>
-      </div>
-      <div class="lb-note"><span class="lb-note-caveat">22% coverage</span><code>soc_analyst</code></div>
-    </div>
-  </div>
-
-  <h3>Cost, reliability, and false positives</h3>
-  <p class="section-sub">Overall across all 1,205 units. LLM bars are the mean across 4 personas; LogLM is the single classifier. The per-flow / verdict F1 chart further down responds to the split tabs.</p>
-
-  <div class="chart-grid">
-    <div class="chart-wrap chart-wrap--grid">
-      <div class="chart-title">Avg. cost per alert</div>
-      <div class="chart-sub">$ per verdict, log scale.</div>
-      <div class="chart-canvas chart-canvas--compact"><canvas id="cost-bars"></canvas></div>
-    </div>
-
-    <div class="chart-wrap chart-wrap--grid">
-      <div class="chart-title">FP rate</div>
-      <div class="chart-sub">Benign units wrongly flagged malicious.</div>
-      <div class="chart-canvas chart-canvas--compact"><canvas id="fpr-bars"></canvas></div>
-    </div>
-
-    <div class="chart-wrap chart-wrap--grid">
-      <div class="chart-title">Completion rate</div>
-      <div class="chart-sub">Renderings completed within budget.</div>
-      <div class="chart-canvas chart-canvas--compact"><canvas id="completion-bars"></canvas></div>
-    </div>
-  </div>
-  <p class="chart-footnote"><code>*</code> glm-5.2 reached only 27% of the 1,205 shared units (328 of 1,205); bars use that subset and may not be representative of the model at full coverage.</p>
-
-  <div class="tabs" role="tablist" aria-label="Gold-label split">
-    <button class="tab active" data-split="benign"
-            data-desc="benign: every flow in the evaluation unit was benign. In the chart and table below, Verdict acc is the true-negative rate (specificity).">benign</button>
-    <button class="tab" data-split="malicious"
-            data-desc="malicious: at least one flow in the evaluation unit was malicious. In the chart and table below, Verdict acc is recall (true-positive rate).">malicious</button>
-    <button class="tab" data-split="mixed"
-            data-desc="mixed: the evaluation unit contained both benign and malicious flows. In the chart and table below, Verdict acc is recall on this subset.">mixed</button>
-    <button class="tab" data-split="combined"
-            data-desc="combined: every evaluation unit, regardless of label. In the chart and table below, Verdict acc is the standard binary accuracy (tp + tn) / total.">combined</button>
-  </div>
-  <p class="tab-desc" id="tab-desc">benign: every flow in the evaluation unit was benign. In the chart and table below, Verdict acc is the true-negative rate (specificity).</p>
-
-  <div class="chart-wrap">
-    <div class="chart-title">per-flow F1 and verdict F1, by split</div>
-    <div class="chart-sub">Mean across the four personas. Hover bars for exact values; click a legend entry to toggle a series.</div>
-    <div class="chart-canvas"><canvas id="headline-chart"></canvas></div>
-  </div>
-
-  <div id="headline-table" class="table-wrap"></div>
-</section>
-
-<!-- ============================================================ -->
-<!-- methodology (placeholder, filled in next pass)               -->
-<!-- ============================================================ -->
-<section id="methodology">
-  <div class="eyebrow">Detection · How it's measured</div>
-  <h2>Methodology</h2>
-  <p class="lead">SOCBench starts with a labeled NetFlow corpus that is provided <a href="https://github.com/DeepTempo/socbench/tree/main/data" target="_blank" rel="noopener">here</a>. Similar approaches on other logs are planned. From these logs a per-provider score is calculated in seven deterministic steps, enabling easy comparisons. Four analyst personas with different tool budgets are defined and work the same evaluation units; submissions are scored against held-out gold labels.</p>
-
-  <h3>The pipeline</h3>
-  <figure class="pipeline-figure">
-    <figcaption class="pipeline-eyebrow">DETERMINISTIC  ·  CONTENT-ADDRESSED  ·  REPRODUCIBLE</figcaption>
-
-    <div class="pipeline" aria-label="SOCBench pipeline: ingest, index, units, sample, agent loop, score, aggregate">
-      <div class="pipeline-row">
-        <div class="step">
-          <span class="step-num">1</span>
-          <span class="step-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" shape-rendering="geometricPrecision">
-              <rect x="3" y="4" width="18" height="16" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="14" x2="21" y2="14"/><line x1="9" y1="4" x2="9" y2="20"/>
-            </svg>
-          </span>
-          <span class="step-title">Ingest dataset</span>
-          <span class="step-sub">757K flow records</span>
-          <span class="step-sub2">8 sources, labeled</span>
-        </div>
-        <div class="step-arrow" aria-hidden="true">
-          <svg viewBox="0 0 36 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-            <line x1="0" y1="8" x2="24" y2="8"/>
-            <polygon points="24,2 36,8 24,14" fill="currentColor" stroke="none"/>
-          </svg>
-        </div>
-        <div class="step">
-          <span class="step-num">2</span>
-          <span class="step-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" shape-rendering="geometricPrecision">
-              <ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v6c0 1.7 4 3 9 3s9-1.3 9-3V5"/><path d="M3 11v8c0 1.7 4 3 9 3s9-1.3 9-3v-8"/>
-            </svg>
-          </span>
-          <span class="step-title">Build index</span>
-          <span class="step-sub">normalize · flow IDs</span>
-          <span class="step-sub2">deterministic hash</span>
-        </div>
-        <div class="step-arrow" aria-hidden="true">
-          <svg viewBox="0 0 36 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-            <line x1="0" y1="8" x2="24" y2="8"/>
-            <polygon points="24,2 36,8 24,14" fill="currentColor" stroke="none"/>
-          </svg>
-        </div>
-        <div class="step">
-          <span class="step-num">3</span>
-          <span class="step-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" shape-rendering="geometricPrecision">
-              <line x1="6.5" y1="7" x2="10.5" y2="11"/><line x1="17.5" y1="7" x2="13.5" y2="11"/><line x1="6.5" y1="17" x2="10.5" y2="13"/><line x1="17.5" y1="17" x2="13.5" y2="13"/>
-              <circle cx="5"  cy="6"  r="2"/><circle cx="19" cy="6"  r="2"/><circle cx="5"  cy="18" r="2"/><circle cx="19" cy="18" r="2"/>
-              <circle cx="12" cy="12" r="2.4" fill="currentColor" stroke="none"/>
-            </svg>
-          </span>
-          <span class="step-title">Construct eval units</span>
-          <span class="step-sub">pair_timeline</span>
-          <span class="step-sub2">host_egress</span>
-        </div>
-        <div class="step-arrow" aria-hidden="true">
-          <svg viewBox="0 0 36 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-            <line x1="0" y1="8" x2="24" y2="8"/>
-            <polygon points="24,2 36,8 24,14" fill="currentColor" stroke="none"/>
-          </svg>
-        </div>
-        <div class="step">
-          <span class="step-num">4</span>
-          <span class="step-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" shape-rendering="geometricPrecision">
-              <rect x="3" y="14" width="3.5" height="6"  rx="0.6"/><rect x="10" y="9"  width="3.5" height="11" rx="0.6"/><rect x="17" y="5"  width="3.5" height="15" rx="0.6"/>
-            </svg>
-          </span>
-          <span class="step-title">Stratified sample</span>
-          <span class="step-sub">1,205 of 17,371 units</span>
-          <span class="step-sub2">across 6 strata</span>
-        </div>
-      </div>
-
-      <div class="pipeline-bridge" aria-hidden="true">
-        <svg viewBox="0 0 16 36" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-          <line x1="8" y1="0" x2="8" y2="24"/>
-          <polygon points="2,24 8,36 14,24" fill="currentColor" stroke="none"/>
-        </svg>
-      </div>
-
-      <div class="pipeline-row">
-        <div class="step step--multi">
-          <span class="step-num">5</span>
-          <span class="step-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" shape-rendering="geometricPrecision">
-              <polyline points="22 4 22 10 16 10"/><polyline points="2 20 2 14 8 14"/><path d="M3.5 9a9 9 0 0 1 14.5-3.4L22 10"/><path d="M2 14l4 4.4A9 9 0 0 0 20.5 15"/>
-            </svg>
-          </span>
-          <span class="step-title">Agent loop</span>
-          <span class="step-sub">4 personas × tools</span>
-          <span class="step-sub2">ReAct, budgeted</span>
-        </div>
-        <div class="step-arrow" aria-hidden="true">
-          <svg viewBox="0 0 36 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-            <line x1="0" y1="8" x2="24" y2="8"/>
-            <polygon points="24,2 36,8 24,14" fill="currentColor" stroke="none"/>
-          </svg>
-        </div>
-        <div class="step step--score">
-          <span class="step-num">6</span>
-          <span class="step-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" shape-rendering="geometricPrecision">
-              <circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5.5"/><circle cx="12" cy="12" r="2.2" fill="currentColor" stroke="none"/>
-            </svg>
-          </span>
-          <span class="step-title">Score vs gold</span>
-          <span class="step-sub">F1 at flow / pair / host</span>
-          <span class="step-sub2">held-out labels</span>
-        </div>
-        <div class="step-arrow" aria-hidden="true">
-          <svg viewBox="0 0 36 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-            <line x1="0" y1="8" x2="24" y2="8"/>
-            <polygon points="24,2 36,8 24,14" fill="currentColor" stroke="none"/>
-          </svg>
-        </div>
-        <div class="step step--multi">
-          <span class="step-num">7</span>
-          <span class="step-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" shape-rendering="geometricPrecision">
-              <line x1="3" y1="21" x2="21" y2="21"/><rect x="5"  y="13" width="3.5" height="8"  rx="0.6"/><rect x="11" y="8"  width="3.5" height="13" rx="0.6"/><rect x="17" y="4"  width="3.5" height="17" rx="0.6"/>
-            </svg>
-          </span>
-          <span class="step-title">Aggregate &amp; compare</span>
-          <span class="step-sub">per-provider leaderboard</span>
-          <span class="step-sub2">efficacy · reliability · cost</span>
-        </div>
-      </div>
-    </div>
-
-    <figcaption class="pipeline-caption">Same corpus + same seed = same numbers.</figcaption>
-  </figure>
-
-  <h3 id="persona-tools">Persona × tools</h3>
-  <p class="section-sub">Each persona has its own turn / tool-call / wall-clock budget and a defined toolset. Higher-tier personas inherit everything below them. The SOC analyst is the lean baseline; the detection engineer carries the full toolkit.</p>
-  <div class="table-wrap">
-    <table class="matrix">
-      <thead>
-        <tr>
-          <th>Tool</th>
-          <th class="check-col">soc_analyst</th>
-          <th class="check-col">threat_analyst</th>
-          <th class="check-col">adversary_hunter</th>
-          <th class="check-col">detection_engineer</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr><td><code>list_pairs</code></td>           <td class="check has">●</td><td class="check has">●</td><td class="check has">●</td><td class="check has">●</td></tr>
-        <tr><td><code>get_pair_timeline</code></td>    <td class="check has">●</td><td class="check has">●</td><td class="check has">●</td><td class="check has">●</td></tr>
-        <tr><td><code>get_flows</code></td>            <td class="check has">●</td><td class="check has">●</td><td class="check has">●</td><td class="check has">●</td></tr>
-        <tr><td><code>host_rollup</code></td>          <td class="check has">●</td><td class="check has">●</td><td class="check has">●</td><td class="check has">●</td></tr>
-        <tr><td><code>submit_assessment</code></td>    <td class="check has">●</td><td class="check has">●</td><td class="check has">●</td><td class="check has">●</td></tr>
-        <tr><td><code>top_destinations</code></td>     <td class="check">·</td>    <td class="check has">●</td><td class="check has">●</td><td class="check has">●</td></tr>
-        <tr><td><code>pair_stats</code></td>           <td class="check">·</td>    <td class="check has">●</td><td class="check has">●</td><td class="check has">●</td></tr>
-        <tr><td><code>port_proto_matrix</code></td>    <td class="check">·</td>    <td class="check">·</td>    <td class="check has">●</td><td class="check has">●</td></tr>
-        <tr><td><code>rarity_stats</code></td>         <td class="check">·</td>    <td class="check">·</td>    <td class="check has">●</td><td class="check has">●</td></tr>
-      </tbody>
-      <tfoot>
-        <tr>
-          <td><strong>Budget</strong> <span class="muted">(turns / calls / wall)</span></td>
-          <td class="check-col num">4 / 6 / 60s</td>
-          <td class="check-col num">8 / 12 / 120s</td>
-          <td class="check-col num">10 / 16 / 150s</td>
-          <td class="check-col num">12 / 20 / 180s</td>
-        </tr>
-      </tfoot>
-    </table>
-  </div>
-  <p class="section-sub" style="margin-top:10px;">
-    <strong>Models in this run:</strong>
-    <code>anthropic = claude-opus-4-7</code>
-    <code>gemini = gemini-2.5-pro</code>
-    <code>openai = gpt-5.4</code>.
-    OpenAI receives a <strong>1.5×</strong> persona-budget multiplier (its reasoning chains are chattier; without it, large <code>host_egress</code> units exhaust budgets before submission). Disclosed for fair comparison.
-  </p>
-
-  <div class="callout info">
-    <div class="callout-title">More detail</div>
-    <p>Blogs and docs explaining the methodology in more depth, including the corpus breakdown, eval-unit construction, scoring-lens math, run-metadata schema, and deterministic-replay tuple, are coming soon. If you look at the underlying GitHub you can see some of this explained in <code>/docs</code> and in the readme. This simple website is by design higher level.</p>
-  </div>
-</section>
-
-<!-- ============================================================ -->
-<!-- results (placeholder, best-persona + cost scatter + table)   -->
-<!-- ============================================================ -->
-<section id="results">
-  <div class="eyebrow">Detection · Per-persona detail</div>
-  <h2>F1, cost, and reliability per persona</h2>
-  <p class="lead">All 25 configurations plotted on the F1 / cost frontier: 6 LLMs × 4 personas, plus LogLM. Winners on each contract dimension called out below (LLMs only, since LogLM has no personas).</p>
-  <p class="lead">At one million alerts a day, the cheapest LLM stack ($0.057 per alert) is roughly $60,000 of inference every day, before a single analyst looks at the output. At telco scale (a large telco active in the Vigil community reports approximately 70 million flow events per minute, which batches into roughly 2 billion alerts per day at 50 flows per alert), the LLM bill runs to hundreds of millions of dollars per day ($114M at the cheapest provider, ~$302M at the priciest).</p>
-
-  <div class="chart-wrap">
-    <div class="chart-title">F1 vs cost per alert, per persona</div>
-    <div class="chart-sub">Cost is dollars per alert (one evaluation unit). Up and to the left is better. Color = provider (legend in chart). Shape = persona (legend below). Hover a point for the exact values; click a provider in the legend to toggle.</div>
-    <div class="tabs tabs--compact" role="tablist" aria-label="F1 metric">
-      <button class="tab active" data-metric="verdict">verdict F1</button>
-      <button class="tab" data-metric="flow">per-flow F1</button>
-    </div>
-    <div class="chart-canvas"><canvas id="cost-chart"></canvas></div>
-    <div class="shape-legend" aria-label="Persona shape legend">
-      <span class="shape-legend-item"><svg viewBox="0 0 12 12" aria-hidden="true"><circle cx="6" cy="6" r="4.2"/></svg> soc_analyst</span>
-      <span class="shape-legend-item"><svg viewBox="0 0 12 12" aria-hidden="true"><polygon points="6,1.5 11,10.5 1,10.5"/></svg> threat_analyst</span>
-      <span class="shape-legend-item"><svg viewBox="0 0 12 12" aria-hidden="true"><polygon points="6,1 11,6 6,11 1,6"/></svg> adversary_hunter</span>
-      <span class="shape-legend-item"><svg viewBox="0 0 12 12" aria-hidden="true"><rect x="1.8" y="1.8" width="8.4" height="8.4"/></svg> detection_engineer</span>
-    </div>
-  </div>
-
-  <h3>Pick your persona · LLMs only</h3>
-  <p class="section-sub">For each contract dimension, the winning (LLM × persona) configuration across all 24 combinations. LogLM excluded here since it has no personas.</p>
-  <div class="pick-cards">
-    <div class="pick-card pick-card--efficacy">
-      <div class="pick-card-label">
-        <svg viewBox="0 0 16 16" width="12" height="12" fill="currentColor" aria-hidden="true"><path d="M8 0l2 6h6l-5 3.5L13 16 8 12 3 16l2-6.5L0 6h6z"/></svg>
-        Best efficacy
-      </div>
-      <div class="pick-stats-dual">
-        <div class="pick-stat-cell">
-          <div class="pick-card-metric">0.93</div>
-          <div class="pick-card-unit">verdict F1</div>
-        </div>
-        <div class="pick-stat-cell">
-          <div class="pick-card-metric">0.65</div>
-          <div class="pick-card-unit">per-flow F1</div>
-        </div>
-      </div>
-      <div class="pick-card-who"><strong>anthropic</strong> · <code>soc_analyst</code></div>
-    </div>
-
-    <div class="pick-card pick-card--cost">
-      <div class="pick-card-label">
-        <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="8" y1="1" x2="8" y2="15"/><path d="M11 4H7a2 2 0 0 0 0 4h2a2 2 0 0 1 0 4H5"/></svg>
-        Lowest cost
-      </div>
-      <div class="pick-card-metric">$0.006</div>
-      <div class="pick-card-unit">per alert (total $7.10 / 1,205)</div>
-      <div class="pick-card-who"><strong>sec-8b</strong> · <code>soc_analyst</code></div>
-    </div>
-
-    <div class="pick-card pick-card--reliability">
-      <div class="pick-card-label">
-        <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 8 7 12 13 4"/></svg>
-        Most reliable
-      </div>
-      <div class="pick-card-metric">99.3%</div>
-      <div class="pick-card-unit">completion rate</div>
-      <div class="pick-card-who"><strong>openai</strong> · <code>detection_engineer</code></div>
-    </div>
-  </div>
-
-  <details>
-    <summary>All 25 rows (24 LLM configurations plus LogLM)</summary>
-    <div id="per-persona-table"></div>
-  </details>
-</section>
-
-<!-- ============================================================ -->
-<!-- reproduce (placeholder)                                      -->
-<!-- ============================================================ -->
-<section id="reproduce">
-  <div class="eyebrow">Run it yourself</div>
-  <h2>Reproduce</h2>
-  <p class="lead">SOCBench is open. Clone, set provider keys, run the launch entry point. Or skip the run and re-score the published artifacts directly. Everything lives in the repo.</p>
-
-  <a class="cta-button" href="https://github.com/DeepTempo/socbench" target="_blank" rel="noopener">
-    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
-      <path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.11.79-.25.79-.55v-2.17c-3.2.7-3.88-1.37-3.88-1.37-.53-1.34-1.3-1.7-1.3-1.7-1.06-.72.08-.71.08-.71 1.17.08 1.79 1.2 1.79 1.2 1.04 1.78 2.73 1.27 3.4.97.1-.75.41-1.27.74-1.56-2.55-.29-5.24-1.28-5.24-5.7 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11 11 0 0 1 5.8 0c2.21-1.49 3.18-1.18 3.18-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.84 1.19 3.1 0 4.43-2.69 5.41-5.25 5.69.42.36.79 1.07.79 2.16v3.2c0 .31.21.67.8.55 4.56-1.52 7.85-5.83 7.85-10.91C23.5 5.65 18.35.5 12 .5z"/>
-    </svg>
-    <span>github.com/DeepTempo/socbench</span>
-    <span class="cta-arrow" aria-hidden="true">→</span>
-  </a>
-
-  <h3>The three runs on this page</h3>
-  <div class="table-wrap">
-    <table>
-      <thead><tr><th>Provider</th><th>Run ID</th><th class="num">Units</th><th class="num">Renderings</th><th class="num">Cost</th></tr></thead>
-      <tbody>
-        <tr><td class="provider-cell">anthropic</td><td><code>20260604T011942Z_full_main_anthropic_4bc5181b_632cbb</code></td><td class="num">1,205</td><td class="num">4,814</td><td class="num">$724.82</td></tr>
-        <tr><td class="provider-cell">openai</td><td><code>20260604T012213Z_full_main_openai_4bc5181b_0b1f4c</code></td><td class="num">1,500</td><td class="num">6,000</td><td class="num">$328.59</td></tr>
-        <tr><td class="provider-cell">gemini</td><td><code>20260604T012407Z_full_main_gemini_4bc5181b_e4a9c6</code></td><td class="num">1,500</td><td class="num">6,000</td><td class="num">$355.13</td></tr>
-      </tbody>
-    </table>
-  </div>
-
-  <div class="callout info">
-    <div class="callout-title">Cost expectations</div>
-    <p>A full run (~1,500 units × 4 personas × 3 providers) costs roughly $1,300 to $1,500 USD in LLM spend at the pricing snapshot dates in this report. A smoke run (8 units) is under $10.</p>
-  </div>
-</section>
 
 <footer class="footer">
-  <div>SOCBench</div>
-  <div><a href="https://github.com/DeepTempo/socbench">github.com/DeepTempo/socbench</a></div>
+  <div class="footer-inner">
+    <div class="footer-copy">
+      <div class="eyebrow">Run it yourself</div>
+      <h2>Reproduce</h2>
+      <p>SOCBench is open. Clone, set provider keys, run the launch entry point. Or skip the run and re-score the published artifacts directly. Everything lives in the repo.</p>
+      <a class="cta-button" href="https://github.com/DeepTempo/socbench" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
+          <path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.11.79-.25.79-.55v-2.17c-3.2.7-3.88-1.37-3.88-1.37-.53-1.34-1.3-1.7-1.3-1.7-1.06-.72.08-.71.08-.71 1.17.08 1.79 1.2 1.79 1.2 1.04 1.78 2.73 1.27 3.4.97.1-.75.41-1.27.74-1.56-2.55-.29-5.24-1.28-5.24-5.7 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11 11 0 0 1 5.8 0c2.21-1.49 3.18-1.18 3.18-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.84 1.19 3.1 0 4.43-2.69 5.41-5.25 5.69.42.36.79 1.07.79 2.16v3.2c0 .31.21.67.8.55 4.56-1.52 7.85-5.83 7.85-10.91C23.5 5.65 18.35.5 12 .5z"/>
+        </svg>
+        <span>github.com/DeepTempo/socbench</span>
+        <span class="cta-arrow" aria-hidden="true">&rarr;</span>
+      </a>
+    </div>
+    <div class="footer-origin">
+      <div class="footer-origin-label">Built with</div>
+      <div class="footer-origin-logos">
+        <a href="https://deeptempo.ai" target="_blank" rel="noopener" class="footer-origin-item" aria-label="DeepTempo">
+          <img src="img/deeptempo-logo.png" alt="DeepTempo" />
+          <span class="footer-origin-caption">deeptempo.ai <span aria-hidden="true">&#8599;</span></span>
+        </a>
+        <a href="https://github.com/Vigil-SOC/vigil" target="_blank" rel="noopener" class="footer-origin-item" aria-label="Vigil">
+          <img src="img/vigil-logo.png" alt="Vigil" />
+          <span class="footer-origin-caption">Vigil-SOC/vigil <span aria-hidden="true">&#8599;</span></span>
+        </a>
+      </div>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>SOCBench &middot; open benchmark for AI in cybersecurity operations</span>
+    <span>Apache 2.0</span>
+  </div>
 </footer>
 
 </body>

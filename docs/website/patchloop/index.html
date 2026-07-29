@@ -1,0 +1,440 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PatchLoop: Vulnerability Detection and Patching Harness · SOCBench</title>
+  <meta name="description" content="PatchLoop is SOCBench's vulnerability detection and patching harness. Propose a patch, apply it, verify it with your own detectors, repair on top of the patched state. Bounded attempts, typed errors, fail-fast verification." />
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../css/harness.css" />
+  <script src="../js/patchloop.js" defer></script>
+</head>
+<body class="harness-page harness-patchloop">
+
+<!-- ============================================================ -->
+<!-- sticky nav (shared shell, copied from landing with 4 edits)  -->
+<!-- ============================================================ -->
+<nav class="nav">
+  <div class="nav-inner">
+    <a class="nav-brand" href="../#overview"><span class="dot"></span>SOCBench</a>
+    <div class="nav-links">
+      <a href="../#overview">Overview</a>
+      <a href="../detection/">Detection</a>
+      <a href="../patchloop/">PatchLoop</a>
+    </div>
+    <span class="nav-current" aria-current="page">PatchLoop</span>
+    <div class="repo-pill" role="group" aria-label="GitHub repository">
+      <a class="repo-pill-half repo-pill-left" href="https://github.com/DeepTempo/socbench" target="_blank" rel="noopener" aria-label="View on GitHub">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
+          <path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.11.79-.25.79-.55v-2.17c-3.2.7-3.88-1.37-3.88-1.37-.53-1.34-1.3-1.7-1.3-1.7-1.06-.72.08-.71.08-.71 1.17.08 1.79 1.2 1.79 1.2 1.04 1.78 2.73 1.27 3.4.97.1-.75.41-1.27.74-1.56-2.55-.29-5.24-1.28-5.24-5.7 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11 11 0 0 1 5.8 0c2.21-1.49 3.18-1.18 3.18-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.84 1.19 3.1 0 4.43-2.69 5.41-5.25 5.69.42.36.79 1.07.79 2.16v3.2c0 .31.21.67.8.55 4.56-1.52 7.85-5.83 7.85-10.91C23.5 5.65 18.35.5 12 .5z"/>
+        </svg>
+        <span>GitHub</span>
+      </a>
+      <span class="repo-pill-divider" aria-hidden="true"></span>
+      <a class="repo-pill-half" href="https://github.com/DeepTempo/socbench" target="_blank" rel="noopener" aria-label="Star DeepTempo/socbench on GitHub">
+        <svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true">
+          <path d="M8 .25a.75.75 0 0 1 .673.418l1.882 3.815 4.21.612a.75.75 0 0 1 .416 1.279l-3.046 2.97.719 4.192a.75.75 0 0 1-1.088.791L8 12.347l-3.766 1.98a.75.75 0 0 1-1.088-.79l.72-4.194L.818 6.374a.75.75 0 0 1 .416-1.28l4.21-.611L7.327.668A.75.75 0 0 1 8 .25z"/>
+        </svg>
+        <span>Star</span>
+        <span class="repo-pill-count" id="repo-star-count" aria-label="star count"></span>
+      </a>
+    </div>
+  </div>
+</nav>
+
+<!-- ============================================================ -->
+<!-- harness-context strip (replaces the landing announcement)    -->
+<!-- ============================================================ -->
+<div class="page-context">
+  <div class="page-context-inner">
+    <a class="page-context-back" href="../#capabilities">&larr; Back to capabilities</a>
+    <span class="page-context-crumb">
+      Capability: <strong>Vulnerability detection and patching</strong>. Implementation: <strong>PatchLoop</strong>. Status: Live.
+    </span>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- page body: original patchloop content, verbatim (em/en dash swept only) -->
+<!-- ============================================================ -->
+<div class="page">
+  <header>
+    <h1><span class="mono">PatchLoop</span>: Vulnerability Detection and Patching Harness</h1>
+    <div class="sub">
+      <b>Verify with the machinery that raised the alert.</b> Propose a patch, apply it, verify it with your own detectors, feed the verbatim failure back to the model, and repair on top of the patched state. Bounded attempts, typed errors, fail-fast verification.
+    </div>
+  </header>
+
+  <div class="harness-tabs" role="tablist">
+    <button class="harness-tab active" data-tab="harness" role="tab" aria-selected="true">
+      Verification Loop
+      <span class="hint">propose &rarr; apply &rarr; verify &rarr; repair</span>
+    </button>
+    <button class="harness-tab" data-tab="contrast" role="tab" aria-selected="false">
+      vs Claude Code like agents
+      <span class="hint">why PatchLoop is ~10x cheaper</span>
+    </button>
+  </div>
+
+  <!-- ============================================================
+       TAB 1. VERIFICATION LOOP
+       ============================================================ -->
+  <div class="panel active" id="panel-harness">
+    <div class="patcheval-disclaimer" role="note" style="margin:0 0 1.25rem;padding:0.85rem 1rem;border-left:3px solid var(--warn,#e0a458);background:rgba(224,164,88,0.08);border-radius:6px;font-size:0.92rem;line-height:1.5">
+      <strong>Disclaimer.</strong> These results are from the original <a href="https://github.com/bytedance/PatchEval" target="_blank" rel="noopener">PatchEval</a> benchmark. On July 24, 2026 &mdash; after these runs &mdash; ByteDance released <strong>PatchEval-Verified</strong>, with revised Docker environments and a new leaderboard. The numbers on this page predate that release and are <strong>not comparable</strong> to PatchEval-Verified. We plan to re-run against the updated version and will follow up.
+    </div>
+
+    <div class="patcheval-block patcheval-block--master">
+      <div class="patcheval-block-label">PatchLoop on PatchEval (original)</div>
+      <div class="patcheval-hero-inline">
+        <span class="patcheval-hero-num">+25.2pp</span>
+        <span class="patcheval-hero-lbl">from PatchLoop with feedback loop</span>
+      </div>
+      <div class="patcheval-supports">
+        <div class="stat"><div class="val accent">57.4%</div><div class="lbl">one verify-feedback round (132/230)</div></div>
+        <div class="stat"><div class="val">33.5%</div><div class="lbl">PatchEval strict, no feedback (77/230)</div></div>
+        <div class="stat"><div class="val warn">~$0.17</div><div class="lbl">per CVE</div></div>
+        <div class="stat"><div class="val">&le;3</div><div class="lbl">bounded attempts</div></div>
+      </div>
+      <p class="patcheval-note">
+        <a href="https://github.com/bytedance/PatchEval" target="_blank" rel="noopener"><strong>PatchEval</strong></a> (ByteDance) is a benchmark of 230 real-world CVEs from 2015 to 2025, across Go, JavaScript, and Python. Each case ships as a Docker image containing the vulnerable repo and a validation entrypoint that checks whether the vulnerability is still exploitable after a patch.
+      </p>
+    </div>
+
+    <!-- Leaderboard comparison: PatchLoop vs the agent frameworks on the original PatchEval board -->
+    <div class="pev-leaderboard">
+      <div class="pev-leaderboard-label">vs. original PatchEval leaderboard</div>
+      <div class="table-wrap">
+        <table class="pev-table">
+          <thead>
+            <tr>
+              <th>System</th>
+              <th>Model</th>
+              <th>Type</th>
+              <th class="num">Overall</th>
+              <th class="num">Go</th>
+              <th class="num">Python</th>
+              <th class="num">Node.js</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="pev-row-patchloop">
+              <td class="provider-cell">PatchLoop</td>
+              <td class="provider-cell">gpt-5-codex</td>
+              <td>verify-feedback loop</td>
+              <td class="num"><strong>57.4%</strong></td>
+              <td class="num">50.6%</td>
+              <td class="num">61.4%</td>
+              <td class="num">61.0%</td>
+            </tr>
+            <tr>
+              <td class="provider-cell"><a href="https://github.com/All-Hands-AI/OpenHands" target="_blank" rel="noopener">OpenHands <span aria-hidden="true">&#8599;</span></a></td>
+              <td class="provider-cell">GPT-5</td>
+              <td>agent</td>
+              <td class="num">36.1%</td>
+              <td class="num">36.1%</td>
+              <td class="num">26.8%</td>
+              <td class="num">44.7%</td>
+            </tr>
+            <tr>
+              <td class="provider-cell"><a href="https://github.com/anthropics/claude-code" target="_blank" rel="noopener">ClaudeCode <span aria-hidden="true">&#8599;</span></a></td>
+              <td class="provider-cell">GPT-5</td>
+              <td>agent</td>
+              <td class="num">34.4%</td>
+              <td class="num">38.5%</td>
+              <td class="num">22.5%</td>
+              <td class="num">40.8%</td>
+            </tr>
+            <tr class="pev-row-patchloop-base">
+              <td class="provider-cell">PatchLoop</td>
+              <td class="provider-cell">gpt-5-codex</td>
+              <td>base LLM, no loop</td>
+              <td class="num">33.5%</td>
+              <td class="num">-</td>
+              <td class="num">-</td>
+              <td class="num">-</td>
+            </tr>
+            <tr>
+              <td class="provider-cell"><a href="https://github.com/SWE-agent/SWE-agent" target="_blank" rel="noopener">SWE-agent <span aria-hidden="true">&#8599;</span></a></td>
+              <td class="provider-cell">GPT-5</td>
+              <td>agent</td>
+              <td class="num">33.0%</td>
+              <td class="num">32.5%</td>
+              <td class="num">22.5%</td>
+              <td class="num">43.4%</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="pev-leaderboard-footnote">
+        Board rows are from the original PatchEval leaderboard (values as of 2026-07-27). PatchLoop's verify-feedback row uses validation output, so it was not eligible for that leaderboard and is shown for context only. See the disclaimer above regarding <a href="https://github.com/bytedance/PatchEval" target="_blank" rel="noopener">PatchEval-Verified</a>.
+      </p>
+    </div>
+
+    <div class="controls">
+      <button class="primary" id="playBtn">&#9654; Play</button>
+      <button id="stepBtn">Step</button>
+      <button id="resetBtn">Restart</button>
+      <select id="speedSel">
+        <option value="1600">Slow</option>
+        <option value="1000" selected>Normal</option>
+        <option value="550">Fast</option>
+      </select>
+      <div class="attempt-pill">attempt <b id="attemptNum">-</b> / 3</div>
+    </div>
+
+    <div class="stage-wrap">
+      <div class="stage">
+        <div class="flow">
+          <div class="node" id="n-finding">
+            <h3>Finding</h3>
+            <p>Normalized, schema-validated at the edge (<span style="font-family:var(--mono)">decodeFinding</span>).</p>
+            <span class="tag">CVE-2099-0001</span>
+            <span class="tag">path traversal</span>
+          </div>
+          <div class="arrow-col">
+            <div class="node" id="n-router" style="width:100%">
+              <h3>Router</h3>
+              <p>kind &rarr; harness</p>
+            </div>
+            <div class="kinds" style="margin-top:0.5rem">
+              <span class="kind" id="k-cve">cve &rarr; CVE harness</span>
+              <span class="kind">pentest &rarr; PoC harness</span>
+              <span class="kind">... &rarr; yours</span>
+            </div>
+          </div>
+
+          <div class="loop-box">
+            <div class="loop-title">RemediationHarness. the loop</div>
+            <div class="loop-row">
+              <div class="node" id="n-propose">
+                <h3>Propose</h3>
+                <p>One structured direct-edit request. No agent round-trips.</p>
+                <span class="tag">DirectEditPatcher</span>
+              </div>
+              <div class="node" id="n-apply">
+                <h3>Apply</h3>
+                <p>Exact search/replace onto the git workspace.</p>
+                <span class="tag">GitWorkspace</span>
+              </div>
+              <div class="node" id="n-verify">
+                <h3>Verify: cheapest first, fail fast</h3>
+                <div class="verifiers">
+                  <div class="verifier" id="v-rescan"><span class="dot"></span> Rescan: finding id gone? <span class="cost">cheap</span></div>
+                  <div class="verifier" id="v-regress"><span class="dot"></span> Regression: tests still pass? <span class="cost">moderate</span></div>
+                  <div class="verifier" id="v-repro"><span class="dot"></span> Reproduction: PoC dead? <span class="cost">expensive</span></div>
+                </div>
+              </div>
+            </div>
+            <div class="feedback-arc" id="feedback">
+              <span class="arrow">&#8617;</span>
+              <span id="feedbackText">Feedback path: verbatim failure output + cumulative diff &rarr; repair ON TOP of patched state</span>
+            </div>
+            <div class="outcome" id="outcome">awaiting verified diff...</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="log-panel">
+        <h3>Harness log</h3>
+        <div class="log" id="log"><div class="sys">// press Play to run a remediation</div></div>
+      </div>
+    </div>
+
+    <div class="rules">
+      <div class="rule" id="r1"><b><span class="n">1</span>Empty patch &ne; success</b>The largest silent-failure bucket in early runs. Counted as a failed attempt with explicit feedback.</div>
+      <div class="rule" id="r2"><b><span class="n">2</span>Repair on patched state</b>No reset between attempts. Prompt carries current files, cumulative diff, verbatim failure.</div>
+      <div class="rule" id="r3"><b><span class="n">3</span>Reset only on bad apply</b>Workspace no longer matches what the model believes. Start clean and say so.</div>
+      <div class="rule" id="r4"><b><span class="n">4</span>Crashing verifier = failure</b><span style="font-family:var(--mono)">catchAllCause</span>: any defect becomes a failed verdict. Enforced by types, not a remembered try/catch.</div>
+      <div class="rule" id="r5"><b><span class="n">5</span>Bounded attempts</b>The first feedback round buys the most; returns fall off fast after 2 to 3.</div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       TAB 2. VS TOOL-CALLING AGENT
+       ============================================================ -->
+  <div class="panel" id="panel-contrast">
+    <div class="contrast-lede">
+      A general coding agent (Claude Code style) is built for <b>open-ended</b> work: a ~20k-token system prompt,
+      a catalog of built-in tools + MCPs, and a forced <span style="font-family:var(--mono)">&lt;think&gt; &rarr; tool &rarr; &lt;think&gt;</span>
+      loop until it finally emits text. For a scoped job (patch this CVE), we already know the shape of the answer.
+      So we skip all of that overhead and spend the intelligence budget on the verification loop instead.
+    </div>
+
+    <div class="controls">
+      <button class="primary ctl" id="vsPlay">&#9654; Run both on the same CVE</button>
+      <button class="ctl" id="vsReset">Restart</button>
+      <div class="attempt-pill">same finding · <b>CVE-2099-0001</b></div>
+    </div>
+
+    <div class="vs-grid">
+      <!-- LEFT: general agent -->
+      <div class="vs-col agent">
+        <div class="vs-head">
+          <h3>General tool-calling agent</h3>
+          <span class="badge">Claude Code style</span>
+        </div>
+
+        <div class="payload">
+          <div class="plabel">Context every turn</div>
+          <div class="tokens fat">system prompt &asymp; <b id="agentSysTok">~20,000</b> tokens · re-sent every round</div>
+          <div class="sys-prompt" id="agentSys">
+You are Claude Code, Anthropic's official CLI for Claude.
+You are an interactive CLI tool that helps users with software engineering tasks.
+Use the instructions below and the tools available to you to assist the user.
+
+IMPORTANT: Assist with defensive security tasks only...
+Always follow these principles when writing code...
+Do what has been asked; nothing more, nothing less...
+NEVER create files unless they're absolutely necessary...
+Prefer editing existing files...
+When writing commit messages or PR descriptions...
+Be careful not to introduce security vulnerabilities...
+[...continues for ~20k tokens of tool schemas, MCP wiring, style rules, examples...]
+          </div>
+          <div class="plabel" style="margin-top:0.65rem">Tool catalog (schemas + descriptions, every turn)</div>
+          <div class="tool-catalog" id="agentTools">
+            <span class="tool-chip" data-t="Think">Think</span>
+            <span class="tool-chip" data-t="Read">Read</span>
+            <span class="tool-chip" data-t="Glob">Glob</span>
+            <span class="tool-chip" data-t="Grep">Grep</span>
+            <span class="tool-chip" data-t="Edit">Edit</span>
+            <span class="tool-chip" data-t="Write">Write</span>
+            <span class="tool-chip" data-t="Bash">Bash</span>
+            <span class="tool-chip" data-t="MCP">MCPxN</span>
+          </div>
+        </div>
+
+        <div class="loop-title" style="margin-bottom:0.45rem">Forced turn loop</div>
+        <div class="turn-rail" id="agentTurns">
+          <div class="turn ghost" data-i="0"><span class="tag">&lt;think&gt;</span><span class="body">plan approach...</span><span class="tok">+1.2k</span></div>
+          <div class="turn ghost" data-i="1"><span class="tag">Glob</span><span class="body">**/*download*</span><span class="tok">+0.4k</span></div>
+          <div class="turn ghost" data-i="2"><span class="tag">&lt;think&gt;</span><span class="body">narrow candidates...</span><span class="tok">+0.9k</span></div>
+          <div class="turn ghost" data-i="3"><span class="tag">Read</span><span class="body">src/api/download.ts</span><span class="tok">+2.1k</span></div>
+          <div class="turn ghost" data-i="4"><span class="tag">&lt;think&gt;</span><span class="body">locate traversal...</span><span class="tok">+1.4k</span></div>
+          <div class="turn ghost" data-i="5"><span class="tag">Grep</span><span class="body">path.join|../</span><span class="tok">+0.6k</span></div>
+          <div class="turn ghost" data-i="6"><span class="tag">&lt;think&gt;</span><span class="body">draft fix...</span><span class="tok">+1.1k</span></div>
+          <div class="turn ghost" data-i="7"><span class="tag">Edit</span><span class="body">sanitize path</span><span class="tok">+0.8k</span></div>
+          <div class="turn ghost" data-i="8"><span class="tag">&lt;think&gt;</span><span class="body">re-check neighbors...</span><span class="tok">+1.0k</span></div>
+          <div class="turn ghost" data-i="9"><span class="tag">Bash</span><span class="body">npm test</span><span class="tok">+1.5k</span></div>
+          <div class="turn ghost" data-i="10"><span class="tag">&lt;think&gt;</span><span class="body">fix one test...</span><span class="tok">+1.3k</span></div>
+          <div class="turn ghost" data-i="11"><span class="tag">Edit</span><span class="body">restore behavior</span><span class="tok">+0.7k</span></div>
+          <div class="turn ghost" data-i="12"><span class="tag">text</span><span class="body">"patched the CVE..."</span><span class="tok">+0.4k</span></div>
+        </div>
+
+        <div class="meter">
+          <div class="meter-row">
+            <span>cumulative tokens this CVE</span>
+            <span class="n" id="agentTok">0</span>
+          </div>
+          <div class="bar"><span id="agentBar"></span></div>
+          <div class="meter-row" style="margin-top:0.45rem">
+            <span>est. cost</span>
+            <span class="n" id="agentCost">$0.00</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: patchloop -->
+      <div class="vs-col patch">
+        <div class="vs-head">
+          <h3>PatchLoop DirectEdit</h3>
+          <span class="badge">specialized harness</span>
+        </div>
+
+        <div class="payload">
+          <div class="plabel">Context: once per attempt</div>
+          <div class="tokens thin">finding + file contents &asymp; <b>~2 to 4k</b> tokens · no agent persona</div>
+          <div class="sys-prompt collapsed" style="mask-image:none; max-height:none; color:#8b95a5">
+Patch this finding with exact search/replace edits.
+Return only the structured EditPatch JSON.
+          </div>
+          <div class="plabel" style="margin-top:0.65rem">What we skip</div>
+          <div class="skip-list">
+            <div class="skip-item"><span class="x">x</span> 20k-token "you are a coding assistant..." system prompt</div>
+            <div class="skip-item"><span class="x">x</span> tool schemas, descriptions, MCP catalogs</div>
+            <div class="skip-item"><span class="x">x</span> forced &lt;think&gt; / Read / Glob / Bash round-trips</div>
+            <div class="skip-item"><span class="x">x</span> the model deciding <i>how</i> to explore. We already know the job.</div>
+          </div>
+        </div>
+
+        <div class="loop-title" style="margin-bottom:0.45rem">One structured request per attempt</div>
+        <div class="turn-rail" id="patchTurns">
+          <div class="turn ghost" data-i="0"><span class="tag">propose</span><span class="body">EditPatch JSON (attempt 1)</span><span class="tok">~3k</span></div>
+          <div class="turn ghost" data-i="1"><span class="tag">apply</span><span class="body">workspace.apply (free)</span><span class="tok">0</span></div>
+          <div class="turn ghost" data-i="2"><span class="tag">verify</span><span class="body">rescan / tests / PoC (your detectors)</span><span class="tok">0</span></div>
+          <div class="turn ghost" data-i="3"><span class="tag">propose</span><span class="body">repair on patched state (attempt 2)</span><span class="tok">~3.5k</span></div>
+          <div class="turn ghost" data-i="4"><span class="tag">verify</span><span class="body">passed &rarr; verified diff</span><span class="tok">0</span></div>
+        </div>
+
+        <div class="meter">
+          <div class="meter-row">
+            <span>cumulative tokens this CVE</span>
+            <span class="n" id="patchTok">0</span>
+          </div>
+          <div class="bar"><span id="patchBar"></span></div>
+          <div class="meter-row" style="margin-top:0.45rem">
+            <span>est. cost</span>
+            <span class="n" id="patchCost">$0.00</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="punchline">
+      <div class="punch">
+        <div class="big danger" id="punchAgent">~45k tok</div>
+        <p>General agent: system prompt + tool schemas re-paid on every turn, then ~12 tool/think cycles before a text answer.</p>
+      </div>
+      <div class="punch">
+        <div class="big" id="punchPatch">~7k tok</div>
+        <p>PatchLoop: one structured propose per attempt. Verification is your scanners, not another model round-trip.</p>
+      </div>
+      <div class="punch">
+        <div class="big warn" id="punchRatio">~10x</div>
+        <p>cheaper for the same scoped job. Intelligence budget spent on the verify-feedback loop, the part that actually moved PatchEval +25pp.</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ============================================================ -->
+<!-- shared footer (landing style)                                -->
+<!-- ============================================================ -->
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="footer-copy">
+      <div class="eyebrow">Run it yourself</div>
+      <h2>Reproduce</h2>
+      <p>SOCBench is open. Clone, set provider keys, run the launch entry point. Or skip the run and re-score the published artifacts directly. Everything lives in the repo.</p>
+      <a class="cta-button" href="https://github.com/DeepTempo/socbench" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
+          <path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.11.79-.25.79-.55v-2.17c-3.2.7-3.88-1.37-3.88-1.37-.53-1.34-1.3-1.7-1.3-1.7-1.06-.72.08-.71.08-.71 1.17.08 1.79 1.2 1.79 1.2 1.04 1.78 2.73 1.27 3.4.97.1-.75.41-1.27.74-1.56-2.55-.29-5.24-1.28-5.24-5.7 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11 11 0 0 1 5.8 0c2.21-1.49 3.18-1.18 3.18-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.84 1.19 3.1 0 4.43-2.69 5.41-5.25 5.69.42.36.79 1.07.79 2.16v3.2c0 .31.21.67.8.55 4.56-1.52 7.85-5.83 7.85-10.91C23.5 5.65 18.35.5 12 .5z"/>
+        </svg>
+        <span>github.com/DeepTempo/socbench</span>
+        <span class="cta-arrow" aria-hidden="true">&rarr;</span>
+      </a>
+    </div>
+    <div class="footer-origin">
+      <div class="footer-origin-label">Built with</div>
+      <div class="footer-origin-logos">
+        <a href="https://deeptempo.ai" target="_blank" rel="noopener" class="footer-origin-item" aria-label="DeepTempo">
+          <img src="../img/deeptempo-logo.png" alt="DeepTempo" />
+          <span class="footer-origin-caption">deeptempo.ai <span aria-hidden="true">&#8599;</span></span>
+        </a>
+        <a href="https://github.com/Vigil-SOC/vigil" target="_blank" rel="noopener" class="footer-origin-item" aria-label="Vigil">
+          <img src="../img/vigil-logo.png" alt="Vigil" />
+          <span class="footer-origin-caption">Vigil-SOC/vigil <span aria-hidden="true">&#8599;</span></span>
+        </a>
+      </div>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>SOCBench &middot; open benchmark for AI in cybersecurity operations</span>
+    <span>Apache 2.0</span>
+  </div>
+</footer>
+
+</body>
+</html>
