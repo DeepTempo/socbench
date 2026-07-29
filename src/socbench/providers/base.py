@@ -232,7 +232,7 @@ def register_adapter(name: str, factory: _AdapterFactory) -> None:
 
 def list_known_providers() -> list[str]:
     """All provider names recognised by :func:`build_adapter` (lazy + eager)."""
-    return sorted(set(_FACTORIES) | {"openai", "anthropic", "gemini", "mock"})
+    return sorted(set(_FACTORIES) | {"openai", "anthropic", "gemini", "open_source", "mock"})
 
 
 def build_adapter(provider: str, model: str) -> Adapter:
@@ -266,6 +266,11 @@ def build_adapter(provider: str, model: str) -> Adapter:
 
         register_adapter("gemini", GeminiAdapter)
         return GeminiAdapter(model)
+    if provider == "open_source":
+        from socbench.providers.open_source_adapter import OpenSourceAdapter
+
+        register_adapter("open_source", OpenSourceAdapter)
+        return OpenSourceAdapter(model)
 
     raise ValueError(
         f"unknown provider {provider!r}; known: {list_known_providers()}"

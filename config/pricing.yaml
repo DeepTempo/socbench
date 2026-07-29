@@ -53,3 +53,22 @@ providers:
       cached_input:  0.03
       output:        2.50
       reasoning:     2.50
+
+  open_source:
+    # Self-hosted / open-weight models. Rates are the $/mtoken you assign to your
+    # own serving cost; there is no cached-input or separate reasoning billing.
+    fdtn-ai/Foundation-Sec-8B-Reasoning:
+      input:         0.02
+      cached_input:  0.0
+      output:        0.05
+      reasoning:     0.0
+    AlicanKiraz0/Seneca-Cybersecurity-LLM-x-QwQ-32B-Q4_Medium-Version:
+      input:         0.06
+      cached_input:  0.0
+      output:        0.20
+      reasoning:     0.0
+    glm-5.2:
+      input:         0.10
+      cached_input:  0.0
+      output:        0.30
+      reasoning:     0.0
