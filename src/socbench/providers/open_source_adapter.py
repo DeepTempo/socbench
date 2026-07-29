@@ -507,6 +507,7 @@ def _json_loads(text: Any) -> dict[str, Any]:
         if isinstance(parsed, dict):
             return parsed
     except (json.JSONDecodeError, TypeError):
+        # Intentionally ignore malformed/non-JSON input and fall back to {}.
         pass
     return {}
 
