@@ -6,6 +6,14 @@ on:
     paths:
       - "docs/website/**"
       - ".github/workflows/pages.yml"
+  # Weekly no-op redeploy. Its real job is to run the security.txt expiry
+  # check on a clock: that guard exists to notice time passing, and a
+  # push-only trigger would never fire it during a quiet stretch. A failure
+  # here blocks the redeploy and leaves the already-published site serving.
+  # Note that GitHub disables scheduled workflows after 60 days of repo
+  # inactivity, so this is a backstop, not a guarantee.
+  schedule:
+    - cron: "0 9 * * 1"
   workflow_dispatch:
 
 permissions:
@@ -34,6 +42,59 @@ jobs:
             echo "::error::em-dash / en-dash found in shipped copy. Substitute periods, colons, or hyphens."
             exit 1
           fi
+      - name: Validate .well-known/security.txt
+        # RFC 9116 treats an expired security.txt as invalid, which is a worse
+        # state than not publishing one at all, so the deploy refuses to ship a
+        # file that is expired or about to be. Warns from 60 days out, fails
+        # under 30, which leaves a month of visible warnings before the gate
+        # actually blocks a deploy. Also enforces the two structural rules the
+        # RFC states outright: at least one Contact, exactly one Expires.
+        run: |
+          python3 - <<'PY'
+          import datetime, sys
+
+          PATH = "docs/website/.well-known/security.txt"
+          WARN_DAYS, FAIL_DAYS = 60, 30
+
+          fields = {}
+          for line in open(PATH, encoding="utf-8"):
+              line = line.strip()
+              if not line or line.startswith("#") or ":" not in line:
+                  continue
+              key, value = line.split(":", 1)
+              fields.setdefault(key.strip(), []).append(value.strip())
+
+          errors = []
+          if not fields.get("Contact"):
+              errors.append("security.txt needs at least one Contact field (RFC 9116 s2.5.3).")
+
+          expires = fields.get("Expires", [])
+          if len(expires) != 1:
+              errors.append(
+                  f"security.txt needs exactly one Expires field, found {len(expires)} (RFC 9116 s2.5.5)."
+              )
+          else:
+              now = datetime.datetime.now(datetime.timezone.utc)
+              when = datetime.datetime.fromisoformat(expires[0].replace("Z", "+00:00"))
+              days = (when - now).days
+              if days < FAIL_DAYS:
+                  state = "has expired" if days < 0 else f"expires in {days} days"
+                  errors.append(
+                      f"security.txt {state} ({expires[0]}). Renew it and bump Expires "
+                      f"before deploying; an expired file is treated as invalid."
+                  )
+              elif days < WARN_DAYS:
+                  print(
+                      f"::warning::security.txt expires in {days} days ({expires[0]}). "
+                      f"Renew it; the deploy starts failing at {FAIL_DAYS} days."
+                  )
+              else:
+                  print(f"security.txt valid for {days} more days.")
+
+          for error in errors:
+              print(f"::error::{error}")
+          sys.exit(1 if errors else 0)
+          PY
       - name: Cache-bust static assets with commit SHA
         # Append ?v=<short-sha> to css/js references in every deployed HTML file
         # so browsers refetch on every deploy instead of serving stale files.

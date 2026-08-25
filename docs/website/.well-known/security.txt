@@ -1,0 +1,14 @@
+# SOCBench - security.txt
+# Standard: RFC 9116 (https://www.rfc-editor.org/rfc/rfc9116)
+# Canonical location: https://socbench.org/.well-known/security.txt
+#
+# To report a vulnerability, please use GitHub private vulnerability reporting
+# (preferred) or the security email below. Do NOT open public GitHub issues.
+
+Contact: https://github.com/DeepTempo/socbench/security/advisories/new
+Contact: mailto:security@deeptempo.ai
+Expires: 2027-08-25T00:00:00.000Z
+Policy: https://github.com/DeepTempo/socbench/blob/main/SECURITY.md
+Acknowledgments: https://github.com/DeepTempo/socbench/blob/main/SECURITY.md#acknowledgments
+Preferred-Languages: en
+Canonical: https://socbench.org/.well-known/security.txt
