@@ -32,7 +32,7 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Copy rule against em-dashes and en-dashes
         # Fail the build if a stray em-dash or en-dash slips into shipped copy
         # (user rule: substitute periods / colons / hyphens / parens). Runs
