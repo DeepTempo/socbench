@@ -108,7 +108,7 @@ jobs:
             sed -i -E "s#(src=\"((\\.\\./)*)js/(data|main|patchloop)\\.js)\"#\\1?v=$SHA\"#g" "$FILE"
           done
       - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: docs/website
       - id: deployment
