@@ -1,0 +1,35 @@
+version: 2
+
+# Dependabot version updates. Security updates (patches for open Dependabot
+# alerts) are enabled separately in repo settings and do not require an entry
+# here; these schedules keep the lockfiles from drifting far enough behind that
+# a security bump turns into a major-version migration.
+updates:
+  # Python benchmark package. uv.lock is the resolved manifest; pyproject.toml
+  # holds the declared ranges.
+  - package-ecosystem: "uv"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    groups:
+      python-minor-and-patch:
+        update-types: ["minor", "patch"]
+
+  # PatchLoop (TypeScript harness).
+  - package-ecosystem: "npm"
+    directory: "/src/socbench/patchloop"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    groups:
+      npm-minor-and-patch:
+        update-types: ["minor", "patch"]
+
+  # Pinned action versions in .github/workflows. Keeping these current matters
+  # because they run with pages: write and id-token: write on the deploy job.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
