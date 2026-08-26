@@ -222,7 +222,7 @@ def normalize_parquet(  # noqa: PLR0912, PLR0915: single linear pipeline; splitt
 
         quoted = ", ".join(f"'{s}'" for s in source_strs)
         query = f"SELECT {', '.join(select_parts)} FROM read_parquet([{quoted}])"
-        arrow_table = con.execute(query).to_arrow_table()
+        arrow_table = con.execute(query).fetch_arrow_table()
     finally:
         con.close()
 
